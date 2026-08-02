@@ -462,7 +462,10 @@ def main(argv):
     print(f"  Environment:       {_ENV_NAME.value}")
     print(f"  Engine / vision:   {_IMPL.value} / {_VISION.value}")
     print(f"  Timesteps:         {ppo_params.num_timesteps:,}")
-    print(f"  Train / eval envs: {ppo_params.num_envs} / {ppo_params.num_eval_envs}")
+    print(
+        "  Train / eval envs: "
+        f"{ppo_params.num_envs} / {ppo_params.get('num_eval_envs', 128)}"
+    )
     print(f"  Batch / evals:     {ppo_params.batch_size} / {ppo_params.num_evals}")
     print(f"  Seed:              {_SEED.value}")
 
@@ -499,15 +502,26 @@ def main(argv):
     # Convert to absolute path
     ckpt_path = epath.Path(_LOAD_CHECKPOINT_PATH.value).resolve()
     if ckpt_path.is_dir():
-      latest_ckpts = list(ckpt_path.glob("*"))
-      latest_ckpts = [ckpt for ckpt in latest_ckpts if ckpt.is_dir()]
-      latest_ckpts.sort(key=lambda x: int(x.name))
-      latest_ckpt = latest_ckpts[-1]
-      restore_checkpoint_path = latest_ckpt
-      print(f"Restoring from: {restore_checkpoint_path}")
+      if (ckpt_path / "ppo_network_config.json").exists():
+        restore_checkpoint_path = ckpt_path
+        print(f"[trainer] Restoring exact checkpoint: {restore_checkpoint_path}")
+      else:
+        latest_ckpts = list(ckpt_path.glob("*"))
+        latest_ckpts = [
+            ckpt
+            for ckpt in latest_ckpts
+            if ckpt.is_dir() and ckpt.name.isdigit()
+        ]
+        if not latest_ckpts:
+          raise FileNotFoundError(
+              f"No numeric checkpoint directories found under {ckpt_path}"
+          )
+        latest_ckpts.sort(key=lambda x: int(x.name))
+        restore_checkpoint_path = latest_ckpts[-1]
+        print(f"[trainer] Restoring latest checkpoint: {restore_checkpoint_path}")
     else:
       restore_checkpoint_path = ckpt_path
-      print(f"Restoring from checkpoint: {restore_checkpoint_path}")
+      print(f"[trainer] Restoring checkpoint: {restore_checkpoint_path}")
   else:
     print("[trainer] Starting a new policy (no checkpoint restore)")
     restore_checkpoint_path = None

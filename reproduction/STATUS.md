@@ -18,9 +18,11 @@
 - [x] macOS state reset/step/render passed
 - [x] macOS MJWarp vision capability boundary recorded
 - [x] Linux NVIDIA vision smoke test passed
-- [ ] Official 10M-step vision training completed
-- [ ] Fixed-seed success evaluation completed
-- [ ] Results documented
+- [x] Adaptive 10M-step vision training completed
+- [x] Fixed-seed success evaluation completed
+- [x] Initial full-run results documented
+- [ ] Best-checkpoint fine-tuning completed
+- [ ] Success target (`>= 0.8`) reached
 
 ## macOS state-smoke result (2026-08-02)
 
@@ -63,6 +65,23 @@ environments, and batch size 256. The initial evaluation passed, but the first
 training epoch exhausted the 11 GiB GPU while requesting another 5.09 GiB.
 The launcher now distinguishes the guarded exact `official` mode from the
 10M-step, memory-aware `full` mode; this GPU selects 512/64/128 for `full`.
+
+## Linux NVIDIA adaptive full run (2026-08-02)
+
+- Hardware: NVIDIA GeForce RTX 2080 Ti, 11 GiB
+- Workload: 10,035,200 effective timesteps, 512 train environments, 64 eval
+  environments, batch size 128
+- Best evaluation: step 5,017,600, mean reward `5.077643`, success `0.046875`
+  (3/64)
+- Final evaluation: step 10,035,200, mean reward `4.318500`, success `0.015625`
+  (1/64)
+- Video review: all four deterministic rollouts approach the cube, but none
+  visibly completes a lift
+- Assessment: pipeline reproduction succeeded; the learned policy has not
+  converged to a reliable grasp-and-lift behavior
+- Next step: run `./reproduction/train_panda_gpu.sh finetune`, which selects
+  the step-5,017,600 checkpoint and writes new artifacts separately
+- Runtime artifacts remain local and are not committed to Git
 
 ## Known hardware boundary
 

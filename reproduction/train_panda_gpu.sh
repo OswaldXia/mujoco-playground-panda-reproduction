@@ -2,11 +2,12 @@
 set -euo pipefail
 
 RUN_KIND="${1:-}"
-if [[ "$RUN_KIND" != "smoke" && "$RUN_KIND" != "full" && "$RUN_KIND" != "official" ]]; then
-  echo "Usage: $0 {smoke|full|official}"
+if [[ "$RUN_KIND" != "smoke" && "$RUN_KIND" != "full" && "$RUN_KIND" != "official" && "$RUN_KIND" != "finetune" ]]; then
+  echo "Usage: $0 {smoke|full|official|finetune}"
   echo "  smoke:    100k-step pipeline validation"
   echo "  full:     10M steps with GPU-memory-aware parallelism"
   echo "  official: exact upstream 1024-env configuration (high-memory GPU)"
+  echo "  finetune: continue from the best full-run checkpoint at a lower learning rate"
   exit 2
 fi
 
@@ -68,6 +69,8 @@ item "Manifest" "$ARTIFACT_DIR/manifest.json"
 PANDA_NUM_TIMESTEPS=10000000
 PANDA_NUM_EVALS=5
 PANDA_CONFIG_OVERRIDES=""
+PANDA_LEARNING_RATE=""
+PANDA_RESTORE_CHECKPOINT=""
 
 if [[ "$RUN_KIND" == "smoke" ]]; then
   PANDA_PROFILE="smoke"
@@ -113,20 +116,64 @@ else
     PANDA_BATCH_SIZE=32
   fi
 
-  if [[ -n "${PANDA_FULL_NUM_ENVS:-}${PANDA_FULL_NUM_EVAL_ENVS:-}${PANDA_FULL_BATCH_SIZE:-}" ]]; then
-    PANDA_PROFILE="custom"
+  if [[ "$RUN_KIND" == "finetune" ]]; then
+    if [[ -n "${PANDA_FINETUNE_NUM_ENVS:-}${PANDA_FINETUNE_NUM_EVAL_ENVS:-}${PANDA_FINETUNE_BATCH_SIZE:-}" ]]; then
+      PANDA_PROFILE="finetune-custom"
+    else
+      PANDA_PROFILE="finetune-$PANDA_PROFILE"
+    fi
+    PANDA_NUM_ENVS="${PANDA_FINETUNE_NUM_ENVS:-$PANDA_NUM_ENVS}"
+    PANDA_NUM_EVAL_ENVS="${PANDA_FINETUNE_NUM_EVAL_ENVS:-$PANDA_NUM_EVAL_ENVS}"
+    PANDA_BATCH_SIZE="${PANDA_FINETUNE_BATCH_SIZE:-$PANDA_BATCH_SIZE}"
+    PANDA_NUM_TIMESTEPS="${PANDA_FINETUNE_TIMESTEPS:-10000000}"
+    PANDA_NUM_EVALS="${PANDA_FINETUNE_NUM_EVALS:-9}"
+    PANDA_LEARNING_RATE="${PANDA_FINETUNE_LEARNING_RATE:-0.0005}"
+  else
+    if [[ -n "${PANDA_FULL_NUM_ENVS:-}${PANDA_FULL_NUM_EVAL_ENVS:-}${PANDA_FULL_BATCH_SIZE:-}" ]]; then
+      PANDA_PROFILE="custom"
+    fi
+    PANDA_NUM_ENVS="${PANDA_FULL_NUM_ENVS:-$PANDA_NUM_ENVS}"
+    PANDA_NUM_EVAL_ENVS="${PANDA_FULL_NUM_EVAL_ENVS:-$PANDA_NUM_EVAL_ENVS}"
+    PANDA_BATCH_SIZE="${PANDA_FULL_BATCH_SIZE:-$PANDA_BATCH_SIZE}"
   fi
-  PANDA_NUM_ENVS="${PANDA_FULL_NUM_ENVS:-$PANDA_NUM_ENVS}"
-  PANDA_NUM_EVAL_ENVS="${PANDA_FULL_NUM_EVAL_ENVS:-$PANDA_NUM_EVAL_ENVS}"
-  PANDA_BATCH_SIZE="${PANDA_FULL_BATCH_SIZE:-$PANDA_BATCH_SIZE}"
-  for value in "$PANDA_NUM_ENVS" "$PANDA_NUM_EVAL_ENVS" "$PANDA_BATCH_SIZE"; do
+  for value in "$PANDA_NUM_ENVS" "$PANDA_NUM_EVAL_ENVS" "$PANDA_BATCH_SIZE" "$PANDA_NUM_TIMESTEPS" "$PANDA_NUM_EVALS"; do
     if ! [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
       echo "Training profile values must be positive integers: $value"
       exit 1
     fi
   done
-  PANDA_CONTACT_CAPACITY=$((24 * PANDA_NUM_ENVS))
+  PANDA_CONTACT_CAPACITY=$((48 * PANDA_NUM_ENVS))
   PANDA_CONFIG_OVERRIDES="{\"naconmax\":$PANDA_CONTACT_CAPACITY,\"naccdmax\":$PANDA_CONTACT_CAPACITY}"
+fi
+
+if [[ "$RUN_KIND" == "finetune" ]]; then
+  PANDA_FULL_ARTIFACT_DIR="${PANDA_FINETUNE_SOURCE_DIR:-$PROJECT_DIR/reproduction/artifacts/panda-vision-full}"
+  PANDA_FINETUNE_SELECTION="$ARTIFACT_DIR/finetune-source.json"
+  if [[ -n "${PANDA_FINETUNE_CHECKPOINT:-}" ]]; then
+    PANDA_RESTORE_CHECKPOINT="$PANDA_FINETUNE_CHECKPOINT"
+    if [[ ! -f "$PANDA_RESTORE_CHECKPOINT/ppo_network_config.json" ]]; then
+      echo "The requested fine-tune checkpoint is not an exact checkpoint directory:"
+      echo "  $PANDA_RESTORE_CHECKPOINT"
+      echo "Expected ppo_network_config.json inside that directory."
+      exit 1
+    fi
+    "$PYTHON" -c 'import json, pathlib, sys; path = pathlib.Path(sys.argv[1]).resolve(); output = pathlib.Path(sys.argv[2]); output.write_text(json.dumps({"checkpoint": str(path), "selection": "explicit override"}, indent=2) + "\n", encoding="utf-8")' \
+      "$PANDA_RESTORE_CHECKPOINT" "$PANDA_FINETUNE_SELECTION"
+  else
+    PANDA_FULL_SUMMARY="$PANDA_FULL_ARTIFACT_DIR/evaluation-summary.json"
+    PANDA_FULL_RUNS="$PANDA_FULL_ARTIFACT_DIR/runs"
+    if [[ ! -f "$PANDA_FULL_SUMMARY" || ! -d "$PANDA_FULL_RUNS" ]]; then
+      echo "A completed full run was not found at:"
+      echo "  $PANDA_FULL_ARTIFACT_DIR"
+      echo "Run './reproduction/train_panda_gpu.sh full' first, or set PANDA_FINETUNE_CHECKPOINT."
+      exit 1
+    fi
+    PANDA_RESTORE_CHECKPOINT="$("$PYTHON" reproduction/select_best_checkpoint.py \
+      --summary "$PANDA_FULL_SUMMARY" \
+      --runs-dir "$PANDA_FULL_RUNS" \
+      --output "$PANDA_FINETUNE_SELECTION" \
+      --path-only)"
+  fi
 fi
 
 if (( (PANDA_BATCH_SIZE * 8) % PANDA_NUM_ENVS != 0 )); then
@@ -142,9 +189,17 @@ item "Train environments" "$PANDA_NUM_ENVS"
 item "Eval environments" "$PANDA_NUM_EVAL_ENVS"
 item "Batch size" "$PANDA_BATCH_SIZE"
 item "Evaluations" "$PANDA_NUM_EVALS"
+if [[ -n "$PANDA_LEARNING_RATE" ]]; then
+  item "Learning rate" "$PANDA_LEARNING_RATE"
+  item "Restore checkpoint" "$PANDA_RESTORE_CHECKPOINT"
+  item "Selection record" "$PANDA_FINETUNE_SELECTION"
+fi
 item "Artifact root" "$ARTIFACT_DIR"
-if [[ "$RUN_KIND" == "full" && "$PANDA_NUM_ENVS" -lt 1024 ]]; then
-  echo "  Note: total training remains 10M steps; only parallelism and batch size are reduced to fit VRAM."
+if [[ "$RUN_KIND" != "smoke" && "$RUN_KIND" != "official" && "$PANDA_NUM_ENVS" -lt 1024 ]]; then
+  echo "  Note: parallelism and batch size are reduced to fit available VRAM."
+fi
+if [[ "$RUN_KIND" == "finetune" ]]; then
+  echo "  Note: policy/value parameters are restored; the optimizer state starts fresh."
 fi
 
 COMMON_ARGS=(
@@ -176,6 +231,12 @@ TRAIN_ARGS=(
 if [[ -n "$PANDA_CONFIG_OVERRIDES" ]]; then
   TRAIN_ARGS+=(--playground_config_overrides="$PANDA_CONFIG_OVERRIDES")
 fi
+if [[ -n "$PANDA_LEARNING_RATE" ]]; then
+  TRAIN_ARGS+=(
+    --learning_rate="$PANDA_LEARNING_RATE"
+    --load_checkpoint_path="$PANDA_RESTORE_CHECKPOINT"
+  )
+fi
 
 stage 4 "PPO training and replay generation"
 echo "  The first evaluation and JIT compilation may take several minutes."
@@ -190,7 +251,11 @@ if (( PANDA_TRAIN_STATUS != 0 )); then
   item "Full log" "$ARTIFACT_DIR/console.log"
   if grep -Eq "RESOURCE_EXHAUSTED|Out of memory|out of memory" "$ARTIFACT_DIR/console.log"; then
     echo "  Cause: GPU memory exhausted. Retry with a smaller custom profile:"
-    echo "  PANDA_FULL_NUM_ENVS=256 PANDA_FULL_NUM_EVAL_ENVS=32 PANDA_FULL_BATCH_SIZE=64 ./reproduction/train_panda_gpu.sh full"
+    if [[ "$RUN_KIND" == "finetune" ]]; then
+      echo "  PANDA_FINETUNE_NUM_ENVS=256 PANDA_FINETUNE_NUM_EVAL_ENVS=32 PANDA_FINETUNE_BATCH_SIZE=64 ./reproduction/train_panda_gpu.sh finetune"
+    else
+      echo "  PANDA_FULL_NUM_ENVS=256 PANDA_FULL_NUM_EVAL_ENVS=32 PANDA_FULL_BATCH_SIZE=64 ./reproduction/train_panda_gpu.sh full"
+    fi
   fi
   exit "$PANDA_TRAIN_STATUS"
 fi
@@ -221,6 +286,9 @@ echo "Run complete. Output locations:"
 item "Artifact root" "$ARTIFACT_DIR"
 item "Console log" "$ARTIFACT_DIR/console.log"
 item "Environment" "$ARTIFACT_DIR/manifest.json"
+if [[ "$RUN_KIND" == "finetune" ]]; then
+  item "Fine-tune source" "$PANDA_FINETUNE_SELECTION"
+fi
 item "Evaluation summary" "$ARTIFACT_DIR/evaluation-summary.json"
 item "TensorBoard root" "$ARTIFACT_DIR/runs"
 item "Current run" "$PANDA_CURRENT_RUN_DIR"

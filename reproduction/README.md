@@ -14,8 +14,10 @@ The upstream source is pinned to:
 
 1. Run the state-based JAX/CPU smoke test on macOS.
 2. Run the vision/Warp smoke test on a Linux NVIDIA GPU.
-3. Run the official 10M-step vision PPO configuration.
-4. Evaluate fixed-seed episode success and archive the artifacts.
+3. Run the 10M-step vision PPO configuration.
+4. If necessary, continue from the strongest checkpoint with a lower learning
+   rate.
+5. Evaluate fixed-seed episode success and archive the artifacts.
 
 ## macOS smoke test
 
@@ -65,6 +67,8 @@ Follow the upstream CUDA installation instructions, then run:
 ./reproduction/setup_gpu.sh
 ./reproduction/train_panda_gpu.sh smoke
 ./reproduction/train_panda_gpu.sh full
+# Continue from the best checkpoint if the first full run has not converged.
+./reproduction/train_panda_gpu.sh finetune
 # Exact upstream parallelism; intended for a high-memory GPU.
 ./reproduction/train_panda_gpu.sh official
 ```
@@ -81,6 +85,7 @@ The modes have distinct purposes:
 | --- | ---: | --- |
 | `smoke` | 100k | 64 train / 8 eval, batch 32 |
 | `full` | 10M | Selected from GPU memory; see below |
+| `finetune` | 10M additional | Best `full` checkpoint; lower learning rate |
 | `official` | 10M | Exact upstream 1024 train / 128 eval, batch 256 |
 
 `full` preserves the complete 10M-step workload but scales concurrency to fit
@@ -110,7 +115,51 @@ PANDA_FULL_BATCH_SIZE=64 \
 The script also uses CUDA's asynchronous allocator to reduce fragmentation and
 scales the MJWarp contact capacity with the selected environment count.
 
-Both modes use seed 1, write TensorBoard scalars, and extract the final mean
+## Continue an incomplete full run
+
+If the first full run approaches the cube but rarely lifts it, do not continue
+from the final checkpoint automatically. Run:
+
+```bash
+./reproduction/train_panda_gpu.sh finetune
+```
+
+The launcher reads
+`reproduction/artifacts/panda-vision-full/evaluation-summary.json`, selects the
+checkpoint with the highest evaluation success rate (then the highest reward
+when success ties), and trains for another 10M timesteps with learning rate
+`0.0005`. New logs, checkpoints, and videos are written separately under
+`reproduction/artifacts/panda-vision-finetune/`; the original full run is not
+changed. The selected source is recorded in `finetune-source.json`.
+
+For the 2026-08-02 RTX 2080 Ti run, this rule selects step `5,017,600`:
+success was `0.046875` (3/64 episodes) and mean reward was `5.077643`. The
+final checkpoint was weaker (`0.015625`, 1/64), so it should not be the source.
+
+This is parameter fine-tuning rather than an exact optimizer-state resume.
+Brax restores the observation normalizer, policy, and value parameters but
+initializes a new optimizer. Useful overrides are:
+
+```bash
+PANDA_FINETUNE_TIMESTEPS=5000000 \
+PANDA_FINETUNE_NUM_EVALS=9 \
+PANDA_FINETUNE_LEARNING_RATE=0.0003 \
+  ./reproduction/train_panda_gpu.sh finetune
+```
+
+To select an exact checkpoint manually:
+
+```bash
+PANDA_FINETUNE_CHECKPOINT="$PWD/reproduction/artifacts/panda-vision-full/runs/<run>/checkpoints/<step>" \
+  ./reproduction/train_panda_gpu.sh finetune
+```
+
+For an 11 GiB RTX 2080 Ti, the default fine-tune profile remains 512 train
+environments, 64 evaluation environments, and batch size 128. A reasonable
+acceptance target is at least `0.8` fixed-seed evaluation success, preferably
+`0.9`; the four rollout videos should visibly show grasp, lift, and stable hold.
+
+All training modes use seed 1, write TensorBoard scalars, and extract the final mean
 episode reward and `reward/success` metric to `evaluation-summary.json`.
 The console prints five named phases, a compact hardware/training plan, reward
 and ETA at evaluation boundaries, plus a heartbeat every 30 seconds during
@@ -154,7 +203,8 @@ reproduction/artifacts/panda-vision-smoke/
 ```
 
 The adaptive full command uses the same layout under
-`reproduction/artifacts/panda-vision-full/`; the exact profile uses
+`reproduction/artifacts/panda-vision-full/`; fine-tuning uses
+`reproduction/artifacts/panda-vision-finetune/`; the exact profile uses
 `reproduction/artifacts/panda-vision-official/`. At the end of any command,
 the script prints the exact paths to the log, manifest, evaluation summary,
 checkpoint directories, TensorBoard root, and every replay video.
