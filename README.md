@@ -111,6 +111,8 @@ debugging—not for converged visual PPO training.
 ./reproduction/setup_gpu.sh
 ./reproduction/train_panda_gpu.sh smoke
 ./reproduction/train_panda_gpu.sh full
+# Optional exact upstream parallelism on a high-memory GPU:
+./reproduction/train_panda_gpu.sh official
 ```
 
 GPU setup creates the machine-local `.venv`, automatically selects CPython
@@ -124,10 +126,11 @@ The training script performs these checks and outputs automatically:
 1. Verifies that JAX exposes the `gpu` backend.
 2. Runs a one-world MJWarp RGB probe.
 3. Saves the environment manifest, console log, checkpoints, and videos.
-4. Prints phase markers, evaluation progress/ETA, and 30-second heartbeats.
+4. Selects a VRAM-aware 10M-step profile and prints a compact training plan.
 5. Renders task-focused oblique videos that keep the arm and cube visible.
-6. Writes TensorBoard metrics.
-7. Extracts final episode reward and `reward/success` to
+6. Prints evaluation progress/ETA and 30-second JIT/training heartbeats.
+7. Writes TensorBoard metrics.
+8. Extracts final episode reward and `reward/success` to
    `evaluation-summary.json`.
 
 After training, the script prints the exact locations of the console log,
@@ -135,6 +138,12 @@ manifest, evaluation summary, checkpoints, TensorBoard data, and each replay
 video. Smoke outputs live under `reproduction/artifacts/panda-vision-smoke/`;
 full-run outputs use `reproduction/artifacts/panda-vision-full/`. These runtime
 artifacts stay local and are not committed to Git.
+
+`full` always runs 10M timesteps but adapts parallel environments and batch
+size to available VRAM. On the verified 11 GiB RTX 2080 Ti it selects 512
+train environments, 64 evaluation environments, and batch size 128. Use
+`official` only when exact upstream 1024/128/256 parallelism is required and a
+high-memory GPU is available.
 
 ## Repository layout
 
@@ -144,7 +153,7 @@ reproduction/
 ├── smoke_test_macos.py          # State reset, step and render assertions
 ├── vision_backend_probe.py      # 64 x 64 RGB reset/step capability test
 ├── setup_gpu.sh                 # Linux CUDA environment and preflight
-├── train_panda_gpu.sh           # 100k smoke and official 10M training
+├── train_panda_gpu.sh           # Smoke, adaptive 10M, and exact profiles
 ├── summarize_tensorboard.py     # Reward and success metric extraction
 ├── results/                     # Committed machine-readable evidence
 ├── README.md                    # Detailed execution guide

@@ -46,6 +46,9 @@ finiteness checks still passed.
 
 ## Linux NVIDIA vision smoke (2026-08-02)
 
+- Hardware: NVIDIA GeForce RTX 2080 Ti, 11 GiB, CUDA toolkit 12.9
+- Runtime: Linux x86_64, Python 3.12.3, JAX/JAXLIB 0.6.2, Warp 1.15.0
+- Run commit: `35adbdf60613acf7b123299db6bd3f0e576381bb`
 - Test: `PandaPickCubeCartesian` visual PPO smoke mode, 100,000 timesteps
 - Result: passed, as confirmed from the Linux GPU run
 - Artifact root: `reproduction/artifacts/panda-vision-smoke/`
@@ -54,6 +57,12 @@ finiteness checks still passed.
 - Checkpoints, TensorBoard events, and replay videos: timestamped directory
   under `reproduction/artifacts/panda-vision-smoke/runs/`
 - Storage policy: runtime outputs remain local and are ignored by Git
+
+An initial exact-profile full attempt used 1024 train environments, 128 eval
+environments, and batch size 256. The initial evaluation passed, but the first
+training epoch exhausted the 11 GiB GPU while requesting another 5.09 GiB.
+The launcher now distinguishes the guarded exact `official` mode from the
+10M-step, memory-aware `full` mode; this GPU selects 512/64/128 for `full`.
 
 ## Known hardware boundary
 

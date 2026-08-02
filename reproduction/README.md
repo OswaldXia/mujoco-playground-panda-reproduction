@@ -65,6 +65,8 @@ Follow the upstream CUDA installation instructions, then run:
 ./reproduction/setup_gpu.sh
 ./reproduction/train_panda_gpu.sh smoke
 ./reproduction/train_panda_gpu.sh full
+# Exact upstream parallelism; intended for a high-memory GPU.
+./reproduction/train_panda_gpu.sh official
 ```
 
 The setup script creates the machine-local `.venv`, selects CPython 3.12, 3.11,
@@ -73,15 +75,48 @@ PyPI index before installing the project. A macOS checkout and a Linux GPU
 checkout each need their own `.venv`; virtual environments are not portable
 between operating systems. JAX 0.6.2 does not publish a CPython 3.14 wheel.
 
-The `smoke` mode uses 64 visual environments, 100k steps, and three evaluation
-points. The `full` mode uses the official tuned parameters: 1024 environments,
-10M steps, 128 evaluation environments, and a batch size of 256.
+The modes have distinct purposes:
+
+| Mode | Timesteps | Parallelism |
+| --- | ---: | --- |
+| `smoke` | 100k | 64 train / 8 eval, batch 32 |
+| `full` | 10M | Selected from GPU memory; see below |
+| `official` | 10M | Exact upstream 1024 train / 128 eval, batch 256 |
+
+`full` preserves the complete 10M-step workload but scales concurrency to fit
+the detected GPU memory. The automatic profiles are:
+
+| GPU memory | Train envs | Eval envs | Batch size |
+| ---: | ---: | ---: | ---: |
+| 20,000 MiB or more | 1024 | 128 | 256 |
+| 10,000–19,999 MiB | 512 | 64 | 128 |
+| 7,000–9,999 MiB | 256 | 32 | 64 |
+| Less than 7,000 MiB | 128 | 16 | 32 |
+
+An 11 GiB RTX 2080 Ti therefore uses 512/64/128. The exact 1024-env profile
+was observed to exhaust that GPU after the initial evaluation while allocating
+the first training batch. `official` is guarded below 20,000 MiB so this fails
+early with an actionable message instead of during JIT execution.
+
+To reduce an adaptive run further or set an explicit profile:
+
+```bash
+PANDA_FULL_NUM_ENVS=256 \
+PANDA_FULL_NUM_EVAL_ENVS=32 \
+PANDA_FULL_BATCH_SIZE=64 \
+  ./reproduction/train_panda_gpu.sh full
+```
+
+The script also uses CUDA's asynchronous allocator to reduce fragmentation and
+scales the MJWarp contact capacity with the selected environment count.
 
 Both modes use seed 1, write TensorBoard scalars, and extract the final mean
 episode reward and `reward/success` metric to `evaluation-summary.json`.
-The console prints four run phases, completed-step percentages, reward and ETA
-at evaluation boundaries, plus a heartbeat every 30 seconds during long JIT or
-training intervals. Output is unbuffered and preserved in `console.log`.
+The console prints five named phases, a compact hardware/training plan, reward
+and ETA at evaluation boundaries, plus a heartbeat every 30 seconds during
+long JIT or training intervals. Complete configuration dumps and cached Warp
+module messages are hidden in this launcher so the important state remains
+visible. Training output is unbuffered and preserved in `console.log`.
 
 Rollout videos use a task-oriented oblique free camera instead of the model's
 default view or the tightly cropped `front` policy camera. The selected view
@@ -118,9 +153,10 @@ reproduction/artifacts/panda-vision-smoke/
         └── events.out.tfevents.* # TensorBoard event data
 ```
 
-The full command uses the same layout under
-`reproduction/artifacts/panda-vision-full/`. At the end of either command, the
-script prints the exact paths to the log, manifest, evaluation summary,
+The adaptive full command uses the same layout under
+`reproduction/artifacts/panda-vision-full/`; the exact profile uses
+`reproduction/artifacts/panda-vision-official/`. At the end of any command,
+the script prints the exact paths to the log, manifest, evaluation summary,
 checkpoint directories, TensorBoard root, and every replay video.
 
 To inspect the main smoke outputs:

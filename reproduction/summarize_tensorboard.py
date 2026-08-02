@@ -37,6 +37,9 @@ def main() -> None:
   parser.add_argument("--logdir", type=Path, required=True)
   parser.add_argument("--output", type=Path, required=True)
   parser.add_argument("--tag", action="append", dest="tags")
+  parser.add_argument(
+      "--concise", action="store_true", help="Print final scalar values only."
+  )
   args = parser.parse_args()
   tags = tuple(args.tags or DEFAULT_TAGS)
 
@@ -74,7 +77,12 @@ def main() -> None:
   args.output.write_text(
       json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
   )
-  print(json.dumps(report, indent=2, sort_keys=True))
+  if args.concise:
+    print("Final evaluation metrics:")
+    for tag, value in final.items():
+      print(f"  {tag}: {value['value']:.6f} at step {value['step']:,}")
+  else:
+    print(json.dumps(report, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

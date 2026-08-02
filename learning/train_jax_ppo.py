@@ -198,6 +198,12 @@ _WARP_KERNEL_CACHE_DIR = flags.DEFINE_string(
     None,
     "Directory for caching compiled Warp kernels.",
 )
+_QUIET_WARP = flags.DEFINE_boolean(
+    "quiet_warp", False, "Suppress Warp initialization and cached-module logs."
+)
+_PRINT_CONFIG = flags.DEFINE_boolean(
+    "print_config", True, "Print complete environment and PPO configurations."
+)
 _LOGDIR = flags.DEFINE_string("logdir", None, "Directory for logging.")
 _PROGRESS_INTERVAL_SECONDS = flags.DEFINE_float(
     "progress_interval_seconds",
@@ -367,10 +373,13 @@ def main(argv):
 
   del argv
 
-  if _WARP_KERNEL_CACHE_DIR.value is not None:
+  if _WARP_KERNEL_CACHE_DIR.value is not None or _QUIET_WARP.value:
     import warp as wp  # pylint: disable=g-import-not-at-top
 
-    wp.config.kernel_cache_dir = _WARP_KERNEL_CACHE_DIR.value
+    if _WARP_KERNEL_CACHE_DIR.value is not None:
+      wp.config.kernel_cache_dir = _WARP_KERNEL_CACHE_DIR.value
+    if _QUIET_WARP.value:
+      wp.config.log_level = wp.LOG_WARNING
 
   # Load environment configuration
   env_cfg = registry.get_default_config(_ENV_NAME.value)
@@ -443,10 +452,19 @@ def main(argv):
   if _TRAINING_METRICS_STEPS.present:
     ppo_params.training_metrics_steps = _TRAINING_METRICS_STEPS.value
 
-  print(f"Environment Config:\n{env_cfg}")
-  if env_cfg_overrides:
-    print(f"Environment Config Overrides:\n{env_cfg_overrides}\n")
-  print(f"PPO Training Parameters:\n{ppo_params}")
+  if _PRINT_CONFIG.value:
+    print(f"Environment Config:\n{env_cfg}")
+    if env_cfg_overrides:
+      print(f"Environment Config Overrides:\n{env_cfg_overrides}\n")
+    print(f"PPO Training Parameters:\n{ppo_params}")
+  else:
+    print("[trainer] Configuration loaded")
+    print(f"  Environment:       {_ENV_NAME.value}")
+    print(f"  Engine / vision:   {_IMPL.value} / {_VISION.value}")
+    print(f"  Timesteps:         {ppo_params.num_timesteps:,}")
+    print(f"  Train / eval envs: {ppo_params.num_envs} / {ppo_params.num_eval_envs}")
+    print(f"  Batch / evals:     {ppo_params.batch_size} / {ppo_params.num_evals}")
+    print(f"  Seed:              {_SEED.value}")
 
   # Generate unique experiment name
   now = datetime.datetime.now()
@@ -454,12 +472,12 @@ def main(argv):
   exp_name = f"{_ENV_NAME.value}-{timestamp}"
   if _SUFFIX.value is not None:
     exp_name += f"-{_SUFFIX.value}"
-  print(f"Experiment name: {exp_name}")
+  print(f"[trainer] Experiment: {exp_name}")
 
   # Set up logging directory
   logdir = epath.Path(_LOGDIR.value or "logs").resolve() / exp_name
   logdir.mkdir(parents=True, exist_ok=True)
-  print(f"Logs are being stored in: {logdir}")
+  print(f"[trainer] Run directory: {logdir}")
 
   # Initialize Weights & Biases if required
   if _USE_WANDB.value and not _PLAY_ONLY.value:
@@ -491,13 +509,13 @@ def main(argv):
       restore_checkpoint_path = ckpt_path
       print(f"Restoring from checkpoint: {restore_checkpoint_path}")
   else:
-    print("No checkpoint path provided, not restoring from checkpoint")
+    print("[trainer] Starting a new policy (no checkpoint restore)")
     restore_checkpoint_path = None
 
   # Set up checkpoint directory
   ckpt_path = logdir / "checkpoints"
   ckpt_path.mkdir(parents=True, exist_ok=True)
-  print(f"Checkpoint path: {ckpt_path}")
+  print(f"[trainer] Checkpoints: {ckpt_path}")
 
   # Save environment configuration
   with open(ckpt_path / "config.json", "w", encoding="utf-8") as fp:
