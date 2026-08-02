@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv-gpu}"
+VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv}"
 PACKAGE_INDEX_URL="${PACKAGE_INDEX_URL:-https://pypi.org/simple}"
 
 cd "$PROJECT_DIR"
@@ -44,7 +44,7 @@ VENV_TRAIN="$VENV_DIR/bin/train-jax-ppo"
 if ! "$VENV_PYTHON" -c \
   'import platform, sys; assert (3, 11) <= sys.version_info[:2] <= (3, 13), sys.version; print(f"Python {platform.python_version()} on {platform.platform()}")'; then
   echo "The environment at $VENV_DIR uses an unsupported Python version."
-  echo "Choose a new VENV_DIR and set PYTHON_BIN to Python 3.11-3.13."
+  echo "Recreate it with Python 3.11-3.13, or choose a new VENV_DIR."
   exit 1
 fi
 

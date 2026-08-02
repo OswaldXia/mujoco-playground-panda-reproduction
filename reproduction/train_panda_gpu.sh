@@ -9,7 +9,7 @@ fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="$PROJECT_DIR/reproduction/artifacts/panda-vision-$RUN_KIND"
-VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv-gpu}"
+VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv}"
 PYTHON="$VENV_DIR/bin/python"
 TRAIN="$VENV_DIR/bin/train-jax-ppo"
 

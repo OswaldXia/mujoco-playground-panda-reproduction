@@ -67,10 +67,11 @@ Follow the upstream CUDA installation instructions, then run:
 ./reproduction/train_panda_gpu.sh full
 ```
 
-The setup script creates an isolated `.venv-gpu`, selects CPython 3.12, 3.11,
+The setup script creates the machine-local `.venv`, selects CPython 3.12, 3.11,
 or 3.13 in that order, and installs the CUDA 12 JAX plugin from the official
-PyPI index before installing the project. JAX 0.6.2 does not publish a CPython
-3.14 wheel.
+PyPI index before installing the project. A macOS checkout and a Linux GPU
+checkout each need their own `.venv`; virtual environments are not portable
+between operating systems. JAX 0.6.2 does not publish a CPython 3.14 wheel.
 
 The `smoke` mode uses 64 visual environments and 100k steps. The `full` mode
 uses the official tuned parameters: 1024 environments, 10M steps, 128
@@ -79,12 +80,13 @@ evaluation environments, and a batch size of 256.
 Both modes use seed 1, write TensorBoard scalars, and extract the final mean
 episode reward and `reward/success` metric to `evaluation-summary.json`.
 
-If a previous setup attempt created an incompatible environment, the new
-script will not reuse `.venv`; it uses `.venv-gpu`. To select an interpreter or
-environment explicitly:
+If a previous setup attempt left an incompatible `.venv`, deactivate and
+remove that failed environment before running the setup script again. The
+script never deletes an existing environment automatically. To select an
+interpreter or a non-default environment explicitly:
 
 ```bash
-PYTHON_BIN=python3.12 VENV_DIR="$PWD/.venv-gpu" \
+PYTHON_BIN=python3.12 VENV_DIR="$PWD/.venv" \
   ./reproduction/setup_gpu.sh
 ```
 

@@ -113,9 +113,11 @@ debugging—not for converged visual PPO training.
 ./reproduction/train_panda_gpu.sh full
 ```
 
-GPU setup uses a separate `.venv-gpu`, automatically selects CPython
-3.12/3.11/3.13, and installs `jax[cuda12]` from the official PyPI index. This
-avoids incompatible CPython 3.14 environments and incomplete package mirrors.
+GPU setup creates the machine-local `.venv`, automatically selects CPython
+3.12/3.11/3.13, and installs `jax[cuda12]` from the official PyPI index. The
+Mac and Linux checkouts use separate local environments even though both are
+named `.venv`. This avoids incompatible CPython 3.14 environments and
+incomplete package mirrors.
 
 The training script performs these checks and outputs automatically:
 
