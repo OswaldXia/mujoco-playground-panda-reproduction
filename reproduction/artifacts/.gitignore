@@ -1,2 +1,6 @@
 *
 !.gitignore
+!macos-smoke/
+macos-smoke/*
+!macos-smoke/panda_state_smoke.png
+!macos-vision-observation.png
