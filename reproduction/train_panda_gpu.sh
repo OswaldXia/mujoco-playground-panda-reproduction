@@ -9,6 +9,8 @@ fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="$PROJECT_DIR/reproduction/artifacts/panda-vision-$RUN_KIND"
+PYTHON="$PROJECT_DIR/.venv/bin/python"
+TRAIN="$PROJECT_DIR/.venv/bin/train-jax-ppo"
 
 export JAX_DEFAULT_MATMUL_PRECISION=highest
 export MUJOCO_GL=egl
@@ -16,10 +18,10 @@ export MUJOCO_GL=egl
 cd "$PROJECT_DIR"
 mkdir -p "$ARTIFACT_DIR"
 
-uv run python -c \
+"$PYTHON" -c \
   'import jax; assert jax.default_backend() == "gpu", jax.devices(); print(jax.devices())'
 
-uv run python reproduction/collect_manifest.py \
+"$PYTHON" reproduction/collect_manifest.py \
   --output "$ARTIFACT_DIR/manifest.json"
 
 COMMON_ARGS=(
@@ -31,10 +33,11 @@ COMMON_ARGS=(
   --reward_scaling=1.0
   --logdir="$ARTIFACT_DIR/runs"
   --suffix="vision-$RUN_KIND-seed1"
+  --use_tb
 )
 
 if [[ "$RUN_KIND" == "smoke" ]]; then
-  uv run train-jax-ppo \
+  "$TRAIN" \
     "${COMMON_ARGS[@]}" \
     --num_timesteps=100000 \
     --num_envs=64 \
@@ -44,13 +47,16 @@ if [[ "$RUN_KIND" == "smoke" ]]; then
     --playground_config_overrides='{"naconmax":1536,"naccdmax":1536}' \
     2>&1 | tee "$ARTIFACT_DIR/console.log"
 else
-  uv run train-jax-ppo \
+  "$TRAIN" \
     "${COMMON_ARGS[@]}" \
     --num_timesteps=10000000 \
     --num_envs=1024 \
     --num_eval_envs=128 \
     --batch_size=256 \
     --num_evals=5 \
-    --use_tb \
     2>&1 | tee "$ARTIFACT_DIR/console.log"
 fi
+
+"$PYTHON" reproduction/summarize_tensorboard.py \
+  --logdir "$ARTIFACT_DIR/runs" \
+  --output "$ARTIFACT_DIR/evaluation-summary.json"

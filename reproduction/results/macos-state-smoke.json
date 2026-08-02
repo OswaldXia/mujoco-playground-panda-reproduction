@@ -1,5 +1,6 @@
 {
   "date": "2026-08-02",
+  "dependency_profile": "constraints-2026-08-02",
   "environment": "PandaPickCubeCartesian",
   "hardware": {
     "chip": "Apple M1",
@@ -16,10 +17,10 @@
     "device": "TFRT_CPU_0",
     "jax": "0.6.2",
     "jaxlib": "0.6.2",
-    "mujoco": "3.6.0",
-    "mujoco_mjx": "3.6.0",
+    "mujoco": "3.11.0",
+    "mujoco_mjx": "3.11.0",
     "playground": "0.2.0",
-    "warp_lang": "1.11.0"
+    "warp_lang": "1.15.0"
   },
   "test": {
     "action": "all zeros",
@@ -30,15 +31,14 @@
     "observation_finite": true,
     "qpos_size": 16,
     "qvel_size": 15,
-    "reset_seconds": 0.19930241705151275,
+    "reset_seconds": 0.18974045797949657,
     "reward": 0.35323262214660645,
     "state_finite": true,
     "step_seconds": [
-      22.46879762498429,
-      22.459504250029568
+      21.449402416998055,
+      21.192221292003524
     ],
     "steps": 2
   },
-  "upstream_commit": "4db186a5b53427c9d313b9c7200480144894ada1",
-  "warning": "JAX reported overflow encountered in cast during compilation; explicit finiteness assertions passed."
+  "upstream_commit": "4db186a5b53427c9d313b9c7200480144894ada1"
 }
