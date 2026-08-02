@@ -19,20 +19,28 @@ The upstream source is pinned to:
 
 ## macOS smoke test
 
-Create a Python 3.12 environment without CUDA extras:
+Create a Python 3.12 environment and install the exact versions from the
+upstream lock file:
 
 ```bash
-uv venv --python 3.12
+python3.12 -m venv .venv
 source .venv/bin/activate
-uv sync --extra notebooks
-uv run python reproduction/collect_manifest.py \
+python -m pip install uv==0.12.1
+uv sync --frozen --active --extra notebooks
+MPLCONFIGDIR=reproduction/artifacts/matplotlib-cache \
+  python reproduction/collect_manifest.py \
   --output reproduction/artifacts/macos-manifest.json
-uv run python reproduction/smoke_test_macos.py \
+MPLCONFIGDIR=reproduction/artifacts/matplotlib-cache \
+  python reproduction/smoke_test_macos.py \
   --output-dir reproduction/artifacts/macos-smoke
 ```
 
 This stage validates environment loading, JIT reset/step, finite observations,
 and native MuJoCo rendering. It is not intended to train a converged policy.
+
+On macOS, MuJoCo rendering needs access to CoreGraphics. Run the smoke test
+from a normal Terminal session if a sandboxed shell reports
+`invalid CoreGraphics connection`.
 
 ## Linux NVIDIA GPU
 
@@ -62,4 +70,3 @@ Keep at least:
 - rollout videos;
 - fixed-seed evaluation report;
 - training curves or TensorBoard logs.
-
