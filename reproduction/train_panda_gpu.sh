@@ -79,4 +79,24 @@ echo "[4/4] Summarizing TensorBoard evaluation metrics..."
   --logdir "$ARTIFACT_DIR/runs" \
   --output "$ARTIFACT_DIR/evaluation-summary.json"
 
-echo "Run complete. Artifacts: $ARTIFACT_DIR"
+shopt -s nullglob
+RUN_DIRS=("$ARTIFACT_DIR"/runs/PandaPickCubeCartesian-*)
+VIDEOS=("$ARTIFACT_DIR"/runs/PandaPickCubeCartesian-*/rollout*.mp4)
+
+echo "Run complete. Output locations:"
+echo "  Artifact root:      $ARTIFACT_DIR"
+echo "  Console log:        $ARTIFACT_DIR/console.log"
+echo "  Environment:        $ARTIFACT_DIR/manifest.json"
+echo "  Evaluation summary: $ARTIFACT_DIR/evaluation-summary.json"
+echo "  TensorBoard root:   $ARTIFACT_DIR/runs"
+for run_dir in "${RUN_DIRS[@]}"; do
+  echo "  Checkpoints:        $run_dir/checkpoints"
+done
+if (( ${#VIDEOS[@]} > 0 )); then
+  echo "  Replay videos:"
+  for video in "${VIDEOS[@]}"; do
+    echo "    $video"
+  done
+else
+  echo "  Replay videos:      none found"
+fi

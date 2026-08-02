@@ -102,9 +102,35 @@ Do not enable the generic `--domain_randomization` flag for this environment.
 The visual randomizer exists in `randomize_vision.py` but is not registered in
 the generic manipulation randomizer registry at the pinned revision.
 
-## Expected artifacts
+## Output locations
 
-Runtime outputs are ignored by Git and stored under `reproduction/artifacts/`.
+Runtime outputs are not committed to Git. The smoke command writes them under:
+
+```text
+reproduction/artifacts/panda-vision-smoke/
+├── console.log                 # Complete training console output
+├── manifest.json               # Git, Python, package, and GPU environment
+├── evaluation-summary.json     # Final reward and success metrics
+└── runs/
+    └── PandaPickCubeCartesian-<timestamp>-vision-smoke-seed1/
+        ├── checkpoints/        # Restorable policy checkpoints
+        ├── rollout0.mp4        # Replay videos (normally rollout0-3)
+        └── events.out.tfevents.* # TensorBoard event data
+```
+
+The full command uses the same layout under
+`reproduction/artifacts/panda-vision-full/`. At the end of either command, the
+script prints the exact paths to the log, manifest, evaluation summary,
+checkpoint directories, TensorBoard root, and every replay video.
+
+To inspect the main smoke outputs:
+
+```bash
+cat reproduction/artifacts/panda-vision-smoke/evaluation-summary.json
+ls -lh reproduction/artifacts/panda-vision-smoke/runs/*/rollout*.mp4
+tensorboard --logdir reproduction/artifacts/panda-vision-smoke/runs
+```
+
 Keep at least:
 
 - environment manifest;

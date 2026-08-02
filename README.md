@@ -130,6 +130,12 @@ The training script performs these checks and outputs automatically:
 7. Extracts final episode reward and `reward/success` to
    `evaluation-summary.json`.
 
+After training, the script prints the exact locations of the console log,
+manifest, evaluation summary, checkpoints, TensorBoard data, and each replay
+video. Smoke outputs live under `reproduction/artifacts/panda-vision-smoke/`;
+full-run outputs use `reproduction/artifacts/panda-vision-full/`. These runtime
+artifacts stay local and are not committed to Git.
+
 ## Repository layout
 
 ```text
