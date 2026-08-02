@@ -73,12 +73,20 @@ PyPI index before installing the project. A macOS checkout and a Linux GPU
 checkout each need their own `.venv`; virtual environments are not portable
 between operating systems. JAX 0.6.2 does not publish a CPython 3.14 wheel.
 
-The `smoke` mode uses 64 visual environments and 100k steps. The `full` mode
-uses the official tuned parameters: 1024 environments, 10M steps, 128
-evaluation environments, and a batch size of 256.
+The `smoke` mode uses 64 visual environments, 100k steps, and three evaluation
+points. The `full` mode uses the official tuned parameters: 1024 environments,
+10M steps, 128 evaluation environments, and a batch size of 256.
 
 Both modes use seed 1, write TensorBoard scalars, and extract the final mean
 episode reward and `reward/success` metric to `evaluation-summary.json`.
+The console prints four run phases, completed-step percentages, reward and ETA
+at evaluation boundaries, plus a heartbeat every 30 seconds during long JIT or
+training intervals. Output is unbuffered and preserved in `console.log`.
+
+Rollout videos use a task-oriented oblique free camera instead of the model's
+default view or the tightly cropped `front` policy camera. The selected view
+keeps the arm, gripper, cube, and lift region visible without adding another
+model camera and therefore does not change the visual policy observation.
 
 If a previous setup attempt left an incompatible `.venv`, deactivate and
 remove that failed environment before running the setup script again. The

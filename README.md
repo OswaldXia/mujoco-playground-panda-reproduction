@@ -124,8 +124,10 @@ The training script performs these checks and outputs automatically:
 1. Verifies that JAX exposes the `gpu` backend.
 2. Runs a one-world MJWarp RGB probe.
 3. Saves the environment manifest, console log, checkpoints, and videos.
-4. Writes TensorBoard metrics.
-5. Extracts final episode reward and `reward/success` to
+4. Prints phase markers, evaluation progress/ETA, and 30-second heartbeats.
+5. Renders task-focused oblique videos that keep the arm and cube visible.
+6. Writes TensorBoard metrics.
+7. Extracts final episode reward and `reward/success` to
    `evaluation-summary.json`.
 
 ## Repository layout

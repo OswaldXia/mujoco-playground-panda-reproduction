@@ -18,6 +18,7 @@ import datetime
 import functools
 import json
 import os
+import threading
 import time
 import warnings
 
@@ -108,6 +109,23 @@ _NUM_TIMESTEPS = flags.DEFINE_integer(
 _NUM_VIDEOS = flags.DEFINE_integer(
     "num_videos", 1, "Number of videos to record after training."
 )
+_RENDER_CAMERA = flags.DEFINE_string(
+    "render_camera", None, "Named MuJoCo camera to use for rollout videos."
+)
+_RENDER_CAMERA_LOOKAT = flags.DEFINE_list(
+    "render_camera_lookat",
+    None,
+    "Free-camera look-at point as x,y,z for rollout videos.",
+)
+_RENDER_CAMERA_DISTANCE = flags.DEFINE_float(
+    "render_camera_distance", 1.2, "Free-camera distance for rollout videos."
+)
+_RENDER_CAMERA_AZIMUTH = flags.DEFINE_float(
+    "render_camera_azimuth", 140.0, "Free-camera azimuth in degrees."
+)
+_RENDER_CAMERA_ELEVATION = flags.DEFINE_float(
+    "render_camera_elevation", -25.0, "Free-camera elevation in degrees."
+)
 _NUM_EVALS = flags.DEFINE_integer("num_evals", 5, "Number of evaluations")
 _REWARD_SCALING = flags.DEFINE_float("reward_scaling", 0.1, "Reward scaling")
 _EPISODE_LENGTH = flags.DEFINE_integer("episode_length", 1000, "Episode length")
@@ -181,6 +199,132 @@ _WARP_KERNEL_CACHE_DIR = flags.DEFINE_string(
     "Directory for caching compiled Warp kernels.",
 )
 _LOGDIR = flags.DEFINE_string("logdir", None, "Directory for logging.")
+_PROGRESS_INTERVAL_SECONDS = flags.DEFINE_float(
+    "progress_interval_seconds",
+    30.0,
+    "Seconds between heartbeat messages while JIT or training is running; 0 "
+    "disables heartbeats.",
+    lower_bound=0.0,
+)
+
+
+def _format_duration(seconds: float) -> str:
+  seconds = max(0, round(seconds))
+  hours, remainder = divmod(seconds, 3600)
+  minutes, seconds = divmod(remainder, 60)
+  if hours:
+    return f"{hours:d}h{minutes:02d}m{seconds:02d}s"
+  return f"{minutes:d}m{seconds:02d}s"
+
+
+class _ProgressReporter:
+  """Prints durable progress lines, including during long JIT compilation."""
+
+  def __init__(self, total_steps: int, interval_seconds: float):
+    self._total_steps = max(0, total_steps)
+    self._interval_seconds = interval_seconds
+    self._started = time.monotonic()
+    self._last_message = self._started
+    self._steps = 0
+    self._lock = threading.Lock()
+    self._stop_event = threading.Event()
+    self._thread = None
+
+  def start(self) -> None:
+    self._started = time.monotonic()
+    self._last_message = self._started
+    print(
+        "[progress] PPO started; the first update includes JIT compilation.",
+        flush=True,
+    )
+    if self._interval_seconds > 0:
+      self._thread = threading.Thread(
+          target=self._heartbeat, name="ppo-progress", daemon=True
+      )
+      self._thread.start()
+
+  def update(self, num_steps: int, metrics) -> None:
+    now = time.monotonic()
+    with self._lock:
+      self._steps = max(self._steps, min(num_steps, self._total_steps))
+      elapsed = now - self._started
+      percent = (
+          100.0 * self._steps / self._total_steps
+          if self._total_steps
+          else 100.0
+      )
+      details = [
+          f"steps={self._steps:,}/{self._total_steps:,}",
+          f"progress={percent:5.1f}%",
+          f"elapsed={_format_duration(elapsed)}",
+      ]
+      if self._steps > 0 and self._steps < self._total_steps:
+        steps_per_second = self._steps / max(elapsed, 1e-6)
+        eta = (self._total_steps - self._steps) / steps_per_second
+        details.append(f"eta={_format_duration(eta)}")
+      for key, label in (
+          ("eval/episode_reward", "eval_reward"),
+          ("episode/sum_reward", "train_reward"),
+      ):
+        if key in metrics:
+          details.append(f"{label}={metrics[key]:.3f}")
+      print(f"[progress] {' '.join(details)}", flush=True)
+      self._last_message = now
+
+  def stop(self) -> None:
+    self._stop_event.set()
+    if self._thread is not None:
+      self._thread.join(timeout=1.0)
+
+  def _heartbeat(self) -> None:
+    while not self._stop_event.wait(self._interval_seconds):
+      now = time.monotonic()
+      with self._lock:
+        if now - self._last_message < self._interval_seconds * 0.9:
+          continue
+        elapsed = _format_duration(now - self._started)
+        percent = (
+            100.0 * self._steps / self._total_steps
+            if self._total_steps
+            else 100.0
+        )
+        phase = "JIT/first update" if self._steps == 0 else "training"
+        print(
+            f"[heartbeat] phase={phase} last_completed={percent:.1f}% "
+            f"elapsed={elapsed}",
+            flush=True,
+        )
+        self._last_message = now
+
+
+def _get_render_camera():
+  """Builds the named or free camera selected for rollout rendering."""
+  if _RENDER_CAMERA.value and _RENDER_CAMERA_LOOKAT.present:
+    raise ValueError(
+        "Use either --render_camera or --render_camera_lookat, not both."
+    )
+  free_camera_option_present = any((
+      _RENDER_CAMERA_DISTANCE.present,
+      _RENDER_CAMERA_AZIMUTH.present,
+      _RENDER_CAMERA_ELEVATION.present,
+  ))
+  if free_camera_option_present and not _RENDER_CAMERA_LOOKAT.present:
+    raise ValueError(
+        "Free-camera distance/angles require --render_camera_lookat=x,y,z."
+    )
+  if not _RENDER_CAMERA_LOOKAT.present:
+    return _RENDER_CAMERA.value
+
+  lookat = [float(value) for value in _RENDER_CAMERA_LOOKAT.value]
+  if len(lookat) != 3:
+    raise ValueError("--render_camera_lookat must contain exactly x,y,z.")
+  camera = mujoco.MjvCamera()
+  camera.type = mujoco.mjtCamera.mjCAMERA_FREE
+  camera.lookat[:] = lookat
+  camera.distance = _RENDER_CAMERA_DISTANCE.value
+  camera.azimuth = _RENDER_CAMERA_AZIMUTH.value
+  camera.elevation = _RENDER_CAMERA_ELEVATION.value
+  return camera
 
 
 def get_rl_config(env_name: str) -> config_dict.ConfigDict:
@@ -398,6 +542,9 @@ def main(argv):
   )
 
   times = [time.monotonic()]
+  progress_reporter = _ProgressReporter(
+      ppo_params.num_timesteps, _PROGRESS_INTERVAL_SECONDS.value
+  )
 
   # Progress function for logging
   def progress(num_steps, metrics):
@@ -412,14 +559,7 @@ def main(argv):
       for key, value in metrics.items():
         writer.add_scalar(key, value, num_steps)
       writer.flush()
-    if _RUN_EVALS.value:
-      print(f"{num_steps}: reward={metrics['eval/episode_reward']:.3f}")
-    if _LOG_TRAINING_METRICS.value:
-      if "episode/sum_reward" in metrics:
-        print(
-            f"{num_steps}: mean episode"
-            f" reward={metrics['episode/sum_reward']:.3f}"
-        )
+    progress_reporter.update(num_steps, metrics)
 
   eval_env_overrides = dict(env_cfg_overrides)
   if _VISION.value:
@@ -463,12 +603,17 @@ def main(argv):
       # rscope_handle.dump_rollout(params) # Disabled to prevent rendering slice crash
 
   # Train or load the model
-  make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
-      environment=env,
-      progress_fn=progress,
-      policy_params_fn=policy_params_fn,
-      eval_env=eval_env,
-  )
+  if not _PLAY_ONLY.value:
+    progress_reporter.start()
+  try:
+    make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
+        environment=env,
+        progress_fn=progress,
+        policy_params_fn=policy_params_fn,
+        eval_env=eval_env,
+    )
+  finally:
+    progress_reporter.stop()
 
   print("Done training.")
   if len(times) > 1:
@@ -551,10 +696,25 @@ def main(argv):
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = False
   scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
+  render_camera = _get_render_camera()
+  if isinstance(render_camera, mujoco.MjvCamera):
+    print(
+        "Rendering with free camera: "
+        f"lookat={render_camera.lookat.tolist()}, "
+        f"distance={render_camera.distance}, "
+        f"azimuth={render_camera.azimuth}, "
+        f"elevation={render_camera.elevation}"
+    )
+  elif render_camera is not None:
+    print(f"Rendering with named camera: {render_camera}")
   for i, rollout in enumerate(trajectories):
     traj = rollout[::render_every]
     frames = infer_env.render(
-        traj, height=480, width=640, scene_option=scene_option
+        traj,
+        height=480,
+        width=640,
+        camera=render_camera,
+        scene_option=scene_option,
     )
     media.write_video(logdir / f"rollout{i}.mp4", frames, fps=fps)
     print(f"Rollout video saved as '{logdir}/rollout{i}.mp4'.")

@@ -298,7 +298,7 @@ class MjxEnv(abc.ABC):
       trajectory: List[State],
       height: int = 240,
       width: int = 320,
-      camera: Optional[str] = None,
+      camera: Optional[Union[int, str, mujoco.MjvCamera]] = None,
       scene_option: Optional[mujoco.MjvOption] = None,
       modify_scene_fns: Optional[
           Sequence[Callable[[mujoco.MjvScene], None]]
@@ -324,7 +324,7 @@ def render_array(
     trajectory: Union[List[State], State],
     height: int = 480,
     width: int = 640,
-    camera: Optional[str] = None,
+    camera: Optional[Union[int, str, mujoco.MjvCamera]] = None,
     scene_option: Optional[mujoco.MjvOption] = None,
     modify_scene_fns: Optional[
         Sequence[Callable[[mujoco.MjvScene], None]]
