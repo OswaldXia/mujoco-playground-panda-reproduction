@@ -62,7 +62,7 @@ profile on a MacBook Air with an Apple M1 and 16 GB of memory.
 | One-world MJWarp RGB reset and step | Passed; shape `[1, 64, 64, 3]` |
 | Cached RGB reset / step time on M1 | 1.546 s / 2.025 s |
 | Minimal 128-step Brax PPO update | Passed |
-| Linux NVIDIA 100k visual smoke | Pending GPU |
+| Linux NVIDIA 100k visual smoke | Passed; artifacts in `reproduction/artifacts/panda-vision-smoke/` |
 | Official 10M visual PPO run | Pending GPU |
 
 Machine-readable evidence is committed in
@@ -164,7 +164,8 @@ reproduction/
 本项目复现 MuJoCo Playground 中的 `PandaPickCubeCartesian` 视觉抓取任务。
 它属于基于像素输入的 PPO 强化学习，而不是模仿学习。目前已经在 M1 MacBook
 Air 上完成状态环境、原生渲染、64×64 RGB 视觉 reset/step 和微型 PPO
-训练栈验证；官方 1,024 并行环境、1,000 万步训练仍需要 Linux NVIDIA GPU。
+训练栈验证，并已在 Linux NVIDIA GPU 上完成 10 万步视觉 PPO smoke；官方
+1,024 并行环境、1,000 万步完整训练仍待执行。
 
 项目重点不是简单运行官方 Notebook，而是提供可追踪的源码版本、依赖约束、
 硬件能力探针、训练脚本、成功率提取和 Git 关键节点，方便继续完成 GPU 训练，

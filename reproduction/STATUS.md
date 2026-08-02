@@ -4,7 +4,7 @@
 
 - Environment: `PandaPickCubeCartesian`
 - Upstream commit: `4db186a5b53427c9d313b9c7200480144894ada1`
-- Branch: `reproduce/panda-vision`
+- Project branch: `main`
 - Official vision steps: `10,000,000`
 - Official parallel environments: `1,024`
 - Official evaluation environments: `128`
@@ -17,7 +17,7 @@
 - [x] macOS environment installed with recorded constraints
 - [x] macOS state reset/step/render passed
 - [x] macOS MJWarp vision capability boundary recorded
-- [ ] Linux NVIDIA vision smoke test passed
+- [x] Linux NVIDIA vision smoke test passed
 - [ ] Official 10M-step vision training completed
 - [ ] Fixed-seed success evaluation completed
 - [ ] Results documented
@@ -43,6 +43,17 @@ The stale upstream `uv.lock` profile (JAX 0.6.2, MuJoCo 3.6.0, Warp 1.11.0)
 was also exercised and passed the same assertions. That secondary run emitted
 an `overflow encountered in cast` warning during compilation; the explicit
 finiteness checks still passed.
+
+## Linux NVIDIA vision smoke (2026-08-02)
+
+- Test: `PandaPickCubeCartesian` visual PPO smoke mode, 100,000 timesteps
+- Result: passed, as confirmed from the Linux GPU run
+- Artifact root: `reproduction/artifacts/panda-vision-smoke/`
+- Main outputs: `console.log`, `manifest.json`, and
+  `evaluation-summary.json`
+- Checkpoints, TensorBoard events, and replay videos: timestamped directory
+  under `reproduction/artifacts/panda-vision-smoke/runs/`
+- Storage policy: runtime outputs remain local and are ignored by Git
 
 ## Known hardware boundary
 
