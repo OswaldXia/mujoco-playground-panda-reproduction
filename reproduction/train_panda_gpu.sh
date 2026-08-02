@@ -9,14 +9,21 @@ fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="$PROJECT_DIR/reproduction/artifacts/panda-vision-$RUN_KIND"
-PYTHON="$PROJECT_DIR/.venv/bin/python"
-TRAIN="$PROJECT_DIR/.venv/bin/train-jax-ppo"
+VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv-gpu}"
+PYTHON="$VENV_DIR/bin/python"
+TRAIN="$VENV_DIR/bin/train-jax-ppo"
 
 export JAX_DEFAULT_MATMUL_PRECISION=highest
 export MUJOCO_GL=egl
 
 cd "$PROJECT_DIR"
 mkdir -p "$ARTIFACT_DIR"
+
+if [[ ! -x "$PYTHON" || ! -x "$TRAIN" ]]; then
+  echo "GPU environment not found at $VENV_DIR."
+  echo "Run ./reproduction/setup_gpu.sh first."
+  exit 1
+fi
 
 "$PYTHON" -c \
   'import jax; assert jax.default_backend() == "gpu", jax.devices(); print(jax.devices())'
