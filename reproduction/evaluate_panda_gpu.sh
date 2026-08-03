@@ -25,12 +25,23 @@ cd "$PROJECT_DIR"
 
 ARGS=("$@")
 HAS_CHECKPOINT=false
+HAS_OUTPUT=false
 for argument in "${ARGS[@]}"; do
   if [[ "$argument" == "--checkpoint" || "$argument" == --checkpoint=* ]]; then
     HAS_CHECKPOINT=true
-    break
+  fi
+  if [[ "$argument" == "--output" || "$argument" == --output=* ]]; then
+    HAS_OUTPUT=true
   fi
 done
+
+EVAL_DIR="$PROJECT_DIR/reproduction/artifacts/panda-independent-eval"
+mkdir -p "$EVAL_DIR"
+STAMP="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+CONSOLE_LOG="$EVAL_DIR/console-$STAMP.log"
+if [[ "$HAS_OUTPUT" == false ]]; then
+  ARGS+=(--output "$EVAL_DIR/evaluation-$STAMP.json")
+fi
 
 if [[ "$HAS_CHECKPOINT" == false ]]; then
   ARTIFACT_DIR="${PANDA_EVAL_SOURCE_DIR:-$PROJECT_DIR/reproduction/artifacts/panda-vision-finetune}"
@@ -59,25 +70,46 @@ if [[ "$HAS_CHECKPOINT" == false ]]; then
     fi
   done
   ARGS+=(--checkpoint "$LATEST_CHECKPOINT")
-  echo "[selection] No checkpoint argument supplied; using the latest fine-tune checkpoint:"
-  echo "  $LATEST_CHECKPOINT"
-  echo
+  {
+    echo "[selection] Automatic checkpoint selection"
+    printf "  %-22s%s\n" "Checkpoint" "$LATEST_CHECKPOINT"
+  } | tee -a "$CONSOLE_LOG"
 fi
 
-echo "[preflight] Independent Panda checkpoint evaluation"
-printf "  %-20s %s\n" "GPU" "$(nvidia-smi --query-gpu=name --format=csv,noheader | sed -n '1p')"
-printf "  %-20s %s MiB\n" "VRAM" "$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | sed -n '1p' | tr -d ' ')"
-printf "  %-20s %s\n" "JAX" "$($PYTHON -c 'import jax; print(jax.default_backend(), jax.devices())')"
-echo
+GPU_NAME="$(nvidia-smi --query-gpu=name --format=csv,noheader | sed -n '1p')"
+GPU_MEMORY="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | sed -n '1p' | tr -d ' ')"
+JAX_SUMMARY="$($PYTHON -c 'import jax; print(jax.default_backend(), jax.devices())')"
+{
+  echo
+  echo "[preflight] Linux NVIDIA evaluation"
+  printf "  %-22s%s\n" "GPU" "$GPU_NAME"
+  printf "  %-22s%s MiB\n" "VRAM" "$GPU_MEMORY"
+  printf "  %-22s%s\n" "JAX" "$JAX_SUMMARY"
+  printf "  %-22s%s\n" "Console log" "$CONSOLE_LOG"
+} | tee -a "$CONSOLE_LOG"
 
 set +e
-"$PYTHON" reproduction/evaluate_panda_checkpoint.py "${ARGS[@]}"
-STATUS=$?
+"$PYTHON" reproduction/evaluate_panda_checkpoint.py "${ARGS[@]}" \
+  2>&1 | tee -a "$CONSOLE_LOG"
+STATUS=${PIPESTATUS[0]}
 set -e
 
 if (( STATUS != 0 )); then
   echo
-  echo "[failed] Independent evaluation exited with status $STATUS."
-  echo "If the error is GPU out-of-memory, retry with --num-envs 128."
+  echo "[failed] Independent evaluation exited with status $STATUS." \
+    | tee -a "$CONSOLE_LOG"
+  if grep -Eqi "RESOURCE_EXHAUSTED|out of memory" "$CONSOLE_LOG"; then
+    echo "[action] GPU memory exhausted; retry with --num-envs 128." \
+      | tee -a "$CONSOLE_LOG"
+  else
+    echo "[action] Inspect the traceback above or $CONSOLE_LOG." \
+      | tee -a "$CONSOLE_LOG"
+  fi
   exit "$STATUS"
 fi
+
+{
+  echo
+  echo "Evaluation command complete."
+  printf "  %-22s%s\n" "Console log" "$CONSOLE_LOG"
+} | tee -a "$CONSOLE_LOG"

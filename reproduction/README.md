@@ -200,10 +200,16 @@ policy.
 The report includes successes and rewards by seed, aggregate success rate, a
 95% Wilson confidence interval, worst-seed success, and initial cube positions
 for failures. The default acceptance rule is aggregate success `>= 0.90` and
-worst-seed success `>= 0.85`. Reports are written to:
+worst-seed success `>= 0.85`. The terminal groups related fields in aligned,
+readable sections. Each completed seed reports its own and cumulative success,
+reward, elapsed time, and estimated remaining time. A heartbeat is printed
+during the compiled rollout without inventing an unavailable step percentage.
+Reports and complete console logs are written to:
 
 ```text
-reproduction/artifacts/panda-independent-eval/evaluation-<UTC timestamp>.json
+reproduction/artifacts/panda-independent-eval/
+├── evaluation-<UTC timestamp>-<process>.json
+└── console-<UTC timestamp>-<process>.log
 ```
 
 To evaluate a particular checkpoint or reduce memory use:

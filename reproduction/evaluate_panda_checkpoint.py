@@ -63,7 +63,7 @@ class Heartbeat:
     while not self._stop.wait(self._interval_seconds):
       elapsed = round(time.monotonic() - self._started)
       print(
-          f"[heartbeat] {self._label} is still running; elapsed={elapsed}s",
+          f"[heartbeat] {self._label} | status=running | elapsed={elapsed}s",
           flush=True,
       )
 
@@ -114,6 +114,19 @@ def wilson_interval(successes: int, total: int) -> tuple[float, float]:
       / denominator
   )
   return max(0.0, center - margin), min(1.0, center + margin)
+
+
+def format_duration(seconds: float) -> str:
+  rounded = max(0, round(seconds))
+  minutes, seconds = divmod(rounded, 60)
+  hours, minutes = divmod(minutes, 60)
+  if hours:
+    return f"{hours}h{minutes:02d}m{seconds:02d}s"
+  return f"{minutes}m{seconds:02d}s"
+
+
+def print_item(label: str, value: Any) -> None:
+  print(f"  {label:<22}{value}", flush=True)
 
 
 def resolve_checkpoint(path: Path) -> Path:
@@ -223,6 +236,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+  run_started = time.monotonic()
   args = build_parser().parse_args()
   project_dir = Path(__file__).resolve().parents[1]
   checkpoint_path = resolve_checkpoint(args.checkpoint)
@@ -244,7 +258,6 @@ def main() -> None:
         f"Output already exists; pass --overwrite to replace it: {output_path}"
     )
 
-  print("[1/4] Runtime and checkpoint validation", flush=True)
   backend = jax.default_backend()
   devices = [str(device) for device in jax.devices()]
   if backend != "gpu" and not args.allow_cpu:
@@ -252,20 +265,37 @@ def main() -> None:
         f"JAX backend is {backend}, not gpu. Run this evaluation on the Linux "
         "NVIDIA server, or pass --allow-cpu only for a tiny development test."
     )
-  print(f"  Backend:            {backend}", flush=True)
-  print(f"  Devices:            {', '.join(devices)}", flush=True)
-  print(f"  Checkpoint:         {checkpoint_path}", flush=True)
-  print(f"  Seeds:              {args.seeds}", flush=True)
-  print(f"  Episodes per seed:  {args.num_envs}", flush=True)
-  print(f"  Total episodes:     {args.num_envs * len(args.seeds)}", flush=True)
+  checkpoint_step = (
+      int(checkpoint_path.name) if checkpoint_path.name.isdigit() else None
+  )
+  total_episodes = args.num_envs * len(args.seeds)
+  print("[1/4] Runtime and checkpoint validation", flush=True)
+  print_item("Backend", backend)
+  print_item("Devices", ", ".join(devices))
+  print_item(
+      "Checkpoint step",
+      f"{checkpoint_step:,}" if checkpoint_step is not None else "unknown",
+  )
+  print_item("Checkpoint", checkpoint_path)
+
+  print("\nEvaluation plan", flush=True)
+  print_item("Mode", "deterministic inference only (no training)")
+  print_item("Seeds", ", ".join(map(str, args.seeds)))
+  print_item("Episodes", f"{len(args.seeds)} x {args.num_envs} = {total_episodes:,}")
+  print_item("Aggregate target", f">= {args.target_success:.0%}")
+  print_item("Per-seed target", f">= {args.minimum_seed_success:.0%}")
+  print_item("Report", output_path)
 
   if backend == "gpu":
     import warp as wp  # pylint: disable=g-import-not-at-top
 
     wp.config.log_level = wp.LOG_WARNING
 
-  print("[2/4] Load environment and deterministic policy", flush=True)
   contact_capacity = args.contact_capacity_per_env * args.num_envs
+  print("\n[2/4] Environment and policy loading", flush=True)
+  print_item("Vision observation", "64 x 64 RGB")
+  print_item("Parallel worlds", args.num_envs)
+  print_item("Contact capacity", contact_capacity)
   env_config = registry.get_default_config(ENV_NAME)
   env_overrides = {
       "impl": "warp",
@@ -300,6 +330,9 @@ def main() -> None:
   )
   make_policy = ppo_networks.make_inference_fn(ppo_network)
   params = brax_checkpoint.load(checkpoint_path)
+  print_item("Environment", "ready")
+  print_item("Policy", "ready")
+  print_item("Parameter updates", "disabled")
 
   reset_fn = jax.jit(eval_env.reset)
 
@@ -322,7 +355,7 @@ def main() -> None:
     )
     return final_state
 
-  print("[3/4] Held-out multi-seed evaluation", flush=True)
+  print("\n[3/4] Held-out multi-seed evaluation", flush=True)
   per_seed: list[dict[str, Any]] = []
   all_success: list[np.ndarray] = []
   all_rewards: list[np.ndarray] = []
@@ -330,17 +363,20 @@ def main() -> None:
   object_qpos_address = int(
       base_env.unwrapped._obj_qposadr  # pylint: disable=protected-access
   )
+  evaluation_started = time.monotonic()
 
   for index, seed in enumerate(args.seeds, start=1):
-    print(
-        f"  [{index}/{len(args.seeds)}] seed={seed}: reset, JIT, and rollout",
-        flush=True,
-    )
+    phase = "JIT compilation + rollout" if index == 1 else "rollout"
+    print(f"\nSeed {index}/{len(args.seeds)}: {seed}", flush=True)
+    print_item("Phase", phase)
+    print_item("Status", "running")
     seed_key = jax.random.PRNGKey(seed)
     reset_key, rollout_key = jax.random.split(seed_key)
     reset_keys = jax.random.split(reset_key, args.num_envs)
     started = time.monotonic()
-    with Heartbeat(f"seed={seed}", args.heartbeat_seconds):
+    with Heartbeat(
+        f"seed={seed} phase={phase}", args.heartbeat_seconds
+    ):
       initial_state = reset_fn(reset_keys)
       initial_box_positions = np.asarray(
           initial_state.data.qpos[
@@ -380,13 +416,28 @@ def main() -> None:
     all_success.append(success_mask)
     all_rewards.append(rewards)
     all_lengths.append(episode_lengths)
-    print(
-        f"    success={successes}/{args.num_envs} "
-        f"({seed_result['success_rate']:.2%}) "
-        f"reward={seed_result['mean_reward']:.3f} "
-        f"elapsed={duration:.1f}s",
-        flush=True,
+    completed_successes = sum(result["successes"] for result in per_seed)
+    completed_episodes = index * args.num_envs
+    elapsed_evaluation = time.monotonic() - evaluation_started
+    remaining_seeds = len(args.seeds) - index
+    estimated_remaining = (
+        elapsed_evaluation / index * remaining_seeds
+        if remaining_seeds
+        else 0.0
     )
+    print_item("Status", "complete")
+    print_item(
+        "Seed success",
+        f"{successes}/{args.num_envs} ({seed_result['success_rate']:.2%})",
+    )
+    print_item(
+        "Cumulative success",
+        f"{completed_successes}/{completed_episodes} "
+        f"({completed_successes / completed_episodes:.2%})",
+    )
+    print_item("Mean reward", f"{seed_result['mean_reward']:.3f}")
+    print_item("Seed elapsed", format_duration(duration))
+    print_item("Estimated remaining", f"~{format_duration(estimated_remaining)}")
 
   success_array = np.concatenate(all_success)
   reward_array = np.concatenate(all_rewards)
@@ -401,6 +452,8 @@ def main() -> None:
       and success_rate >= args.target_success
       and worst_seed_rate >= args.minimum_seed_success
   )
+  evaluation_duration = time.monotonic() - evaluation_started
+  total_duration = time.monotonic() - run_started
 
   git_status = git_value(project_dir, "status", "--porcelain")
   report = {
@@ -408,9 +461,7 @@ def main() -> None:
       "generated_at_utc": datetime.datetime.now(datetime.UTC).isoformat(),
       "environment": ENV_NAME,
       "checkpoint": str(checkpoint_path),
-      "checkpoint_step": (
-          int(checkpoint_path.name) if checkpoint_path.name.isdigit() else None
-      ),
+      "checkpoint_step": checkpoint_step,
       "evaluation": {
           "deterministic_policy": True,
           "held_out_seeds": args.seeds,
@@ -418,6 +469,7 @@ def main() -> None:
           "episode_length": episode_length,
           "official_episode_length": official_episode_length,
           "contact_capacity": contact_capacity,
+          "duration_seconds": evaluation_duration,
           "per_seed": per_seed,
           "aggregate": {
               "episodes": total,
@@ -448,7 +500,6 @@ def main() -> None:
       },
   }
 
-  print("[4/4] Write report", flush=True)
   output_path.parent.mkdir(parents=True, exist_ok=True)
   temporary_path = output_path.with_name(f".{output_path.name}.tmp")
   temporary_path.write_text(
@@ -456,13 +507,21 @@ def main() -> None:
   )
   temporary_path.replace(output_path)
 
-  print(f"  Aggregate success: {successes}/{total} ({success_rate:.2%})")
-  print(
-      f"  95% Wilson CI:     [{interval_low:.2%}, {interval_high:.2%}]"
+  status = "PASS" if target_passed else "FAIL"
+  seed_summary = " | ".join(
+      f"{result['seed']}={result['success_rate']:.2%}" for result in per_seed
   )
-  print(f"  Worst seed:        {worst_seed_rate:.2%}")
-  print(f"  Acceptance:        {'PASS' if target_passed else 'FAIL'}")
-  print(f"  Report:            {output_path}")
+  print("\n[4/4] Independent evaluation result")
+  print_item("Acceptance", status)
+  print_item("Aggregate success", f"{successes}/{total} ({success_rate:.2%})")
+  print_item("95% Wilson interval", f"{interval_low:.2%} - {interval_high:.2%}")
+  print_item("Worst seed", f"{worst_seed_rate:.2%}")
+  print_item("Per-seed success", seed_summary)
+  print_item("Mean reward", f"{np.mean(reward_array):.3f}")
+  print_item("Recorded failures", total - successes)
+  print_item("Evaluation time", format_duration(evaluation_duration))
+  print_item("Total time", format_duration(total_duration))
+  print_item("Report", output_path)
 
 
 if __name__ == "__main__":
