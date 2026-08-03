@@ -2,17 +2,18 @@
 set -euo pipefail
 
 RUN_KIND="${1:-}"
-if [[ "$RUN_KIND" != "smoke" && "$RUN_KIND" != "full" && "$RUN_KIND" != "official" && "$RUN_KIND" != "finetune" ]]; then
-  echo "Usage: $0 {smoke|full|official|finetune}"
+if [[ "$RUN_KIND" != "smoke" && "$RUN_KIND" != "full" && "$RUN_KIND" != "official" && "$RUN_KIND" != "finetune" && "$RUN_KIND" != "robustness" ]]; then
+  echo "Usage: $0 {smoke|full|official|finetune|robustness}"
   echo "  smoke:    100k-step pipeline validation"
   echo "  full:     10M steps with GPU-memory-aware parallelism"
   echo "  official: exact upstream 1024-env configuration (high-memory GPU)"
   echo "  finetune: continue from the best full-run checkpoint at a lower learning rate"
+  echo "  robustness: targeted left-side fine-tune from the converged checkpoint"
   exit 2
 fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ARTIFACT_DIR="$PROJECT_DIR/reproduction/artifacts/panda-vision-$RUN_KIND"
+ARTIFACT_DIR="${PANDA_ARTIFACT_DIR:-$PROJECT_DIR/reproduction/artifacts/panda-vision-$RUN_KIND}"
 VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv}"
 PYTHON="$VENV_DIR/bin/python"
 TRAIN="$VENV_DIR/bin/train-jax-ppo"
@@ -71,6 +72,7 @@ PANDA_NUM_EVALS=5
 PANDA_CONFIG_OVERRIDES=""
 PANDA_LEARNING_RATE=""
 PANDA_RESTORE_CHECKPOINT=""
+PANDA_SOURCE_RECORD=""
 
 if [[ "$RUN_KIND" == "smoke" ]]; then
   PANDA_PROFILE="smoke"
@@ -128,6 +130,14 @@ else
     PANDA_NUM_TIMESTEPS="${PANDA_FINETUNE_TIMESTEPS:-10000000}"
     PANDA_NUM_EVALS="${PANDA_FINETUNE_NUM_EVALS:-9}"
     PANDA_LEARNING_RATE="${PANDA_FINETUNE_LEARNING_RATE:-0.0005}"
+  elif [[ "$RUN_KIND" == "robustness" ]]; then
+    PANDA_PROFILE="robustness-left-mixture"
+    PANDA_NUM_ENVS="${PANDA_ROBUSTNESS_NUM_ENVS:-$PANDA_NUM_ENVS}"
+    PANDA_NUM_EVAL_ENVS="${PANDA_ROBUSTNESS_NUM_EVAL_ENVS:-$PANDA_NUM_EVAL_ENVS}"
+    PANDA_BATCH_SIZE="${PANDA_ROBUSTNESS_BATCH_SIZE:-$PANDA_BATCH_SIZE}"
+    PANDA_NUM_TIMESTEPS="${PANDA_ROBUSTNESS_TIMESTEPS:-3000000}"
+    PANDA_NUM_EVALS="${PANDA_ROBUSTNESS_NUM_EVALS:-7}"
+    PANDA_LEARNING_RATE="${PANDA_ROBUSTNESS_LEARNING_RATE:-0.0001}"
   else
     if [[ -n "${PANDA_FULL_NUM_ENVS:-}${PANDA_FULL_NUM_EVAL_ENVS:-}${PANDA_FULL_BATCH_SIZE:-}" ]]; then
       PANDA_PROFILE="custom"
@@ -143,7 +153,16 @@ else
     fi
   done
   PANDA_CONTACT_CAPACITY=$((48 * PANDA_NUM_ENVS))
-  PANDA_CONFIG_OVERRIDES="{\"naconmax\":$PANDA_CONTACT_CAPACITY,\"naccdmax\":$PANDA_CONTACT_CAPACITY}"
+  if [[ "$RUN_KIND" == "robustness" ]]; then
+    PANDA_TARGET_PROBABILITY="${PANDA_ROBUSTNESS_TARGET_PROBABILITY:-0.5}"
+    PANDA_TARGET_Y_MIN="${PANDA_ROBUSTNESS_TARGET_Y_MIN:--0.05}"
+    PANDA_TARGET_Y_MAX="${PANDA_ROBUSTNESS_TARGET_Y_MAX:--0.02}"
+    "$PYTHON" -c 'import sys; p, low, high = map(float, sys.argv[1:]); assert 0 < p <= 1, p; assert -0.05 <= low < high <= 0.05, (low, high)' \
+      "$PANDA_TARGET_PROBABILITY" "$PANDA_TARGET_Y_MIN" "$PANDA_TARGET_Y_MAX"
+    PANDA_CONFIG_OVERRIDES="{\"naconmax\":$PANDA_CONTACT_CAPACITY,\"naccdmax\":$PANDA_CONTACT_CAPACITY,\"box_init_target_probability\":$PANDA_TARGET_PROBABILITY,\"box_init_target_y_range\":[$PANDA_TARGET_Y_MIN,$PANDA_TARGET_Y_MAX]}"
+  else
+    PANDA_CONFIG_OVERRIDES="{\"naconmax\":$PANDA_CONTACT_CAPACITY,\"naccdmax\":$PANDA_CONTACT_CAPACITY}"
+  fi
 fi
 
 if [[ "$RUN_KIND" == "finetune" ]]; then
@@ -174,6 +193,49 @@ if [[ "$RUN_KIND" == "finetune" ]]; then
       --output "$PANDA_FINETUNE_SELECTION" \
       --path-only)"
   fi
+  PANDA_SOURCE_RECORD="$PANDA_FINETUNE_SELECTION"
+elif [[ "$RUN_KIND" == "robustness" ]]; then
+  PANDA_ROBUSTNESS_SOURCE_DIR="${PANDA_ROBUSTNESS_SOURCE_DIR:-$PROJECT_DIR/reproduction/artifacts/panda-vision-finetune}"
+  PANDA_SOURCE_RECORD="$ARTIFACT_DIR/robustness-source.json"
+  if [[ -n "${PANDA_ROBUSTNESS_CHECKPOINT:-}" ]]; then
+    PANDA_RESTORE_CHECKPOINT="$PANDA_ROBUSTNESS_CHECKPOINT"
+    PANDA_ROBUSTNESS_SELECTION="explicit override"
+  else
+    shopt -s nullglob
+    PANDA_SOURCE_RUNS=("$PANDA_ROBUSTNESS_SOURCE_DIR"/runs/PandaPickCubeCartesian-*)
+    if (( ${#PANDA_SOURCE_RUNS[@]} == 0 )); then
+      echo "No completed fine-tune run found under $PANDA_ROBUSTNESS_SOURCE_DIR/runs."
+      echo "Set PANDA_ROBUSTNESS_CHECKPOINT to an exact converged checkpoint."
+      exit 1
+    fi
+    PANDA_SOURCE_RUN="${PANDA_SOURCE_RUNS[0]}"
+    for run_dir in "${PANDA_SOURCE_RUNS[@]}"; do
+      if [[ "$run_dir" -nt "$PANDA_SOURCE_RUN" ]]; then
+        PANDA_SOURCE_RUN="$run_dir"
+      fi
+    done
+    PANDA_SOURCE_CHECKPOINTS=("$PANDA_SOURCE_RUN"/checkpoints/[0-9]*)
+    if (( ${#PANDA_SOURCE_CHECKPOINTS[@]} == 0 )); then
+      echo "No numeric checkpoint found under $PANDA_SOURCE_RUN/checkpoints."
+      exit 1
+    fi
+    PANDA_RESTORE_CHECKPOINT="${PANDA_SOURCE_CHECKPOINTS[0]}"
+    for checkpoint in "${PANDA_SOURCE_CHECKPOINTS[@]}"; do
+      if (( 10#$(basename "$checkpoint") > 10#$(basename "$PANDA_RESTORE_CHECKPOINT") )); then
+        PANDA_RESTORE_CHECKPOINT="$checkpoint"
+      fi
+    done
+    PANDA_ROBUSTNESS_SELECTION="latest converged fine-tune checkpoint"
+  fi
+  if [[ ! -f "$PANDA_RESTORE_CHECKPOINT/ppo_network_config.json" && ! -f "$PANDA_RESTORE_CHECKPOINT/config.json" ]]; then
+    echo "The robustness source is not an exact checkpoint: $PANDA_RESTORE_CHECKPOINT"
+    exit 1
+  fi
+  "$PYTHON" -c 'import json, pathlib, sys; checkpoint, output = pathlib.Path(sys.argv[1]).resolve(), pathlib.Path(sys.argv[2]); selection, probability, low, high, steps, rate = sys.argv[3:]; output.write_text(json.dumps({"checkpoint": str(checkpoint), "selection": selection, "training_distribution": {"base_uniform_range": [-0.05, 0.05], "target_uniform_range": [float(low), float(high)], "target_probability": float(probability)}, "num_timesteps": int(steps), "learning_rate": float(rate)}, indent=2) + "\n", encoding="utf-8")' \
+    "$PANDA_RESTORE_CHECKPOINT" "$PANDA_SOURCE_RECORD" \
+    "$PANDA_ROBUSTNESS_SELECTION" "$PANDA_TARGET_PROBABILITY" \
+    "$PANDA_TARGET_Y_MIN" "$PANDA_TARGET_Y_MAX" \
+    "$PANDA_NUM_TIMESTEPS" "$PANDA_LEARNING_RATE"
 fi
 
 if (( (PANDA_BATCH_SIZE * 8) % PANDA_NUM_ENVS != 0 )); then
@@ -192,14 +254,18 @@ item "Evaluations" "$PANDA_NUM_EVALS"
 if [[ -n "$PANDA_LEARNING_RATE" ]]; then
   item "Learning rate" "$PANDA_LEARNING_RATE"
   item "Restore checkpoint" "$PANDA_RESTORE_CHECKPOINT"
-  item "Selection record" "$PANDA_FINETUNE_SELECTION"
+  item "Selection record" "$PANDA_SOURCE_RECORD"
 fi
 item "Artifact root" "$ARTIFACT_DIR"
 if [[ "$RUN_KIND" != "smoke" && "$RUN_KIND" != "official" && "$PANDA_NUM_ENVS" -lt 1024 ]]; then
   echo "  Note: parallelism and batch size are reduced to fit available VRAM."
 fi
-if [[ "$RUN_KIND" == "finetune" ]]; then
+if [[ "$RUN_KIND" == "finetune" || "$RUN_KIND" == "robustness" ]]; then
   echo "  Note: policy/value parameters are restored; the optimizer state starts fresh."
+fi
+if [[ "$RUN_KIND" == "robustness" ]]; then
+  item "Target mixture" "$PANDA_TARGET_PROBABILITY in [$PANDA_TARGET_Y_MIN, $PANDA_TARGET_Y_MAX]"
+  echo "  Note: the remaining resets retain the original uniform distribution."
 fi
 
 COMMON_ARGS=(
@@ -253,6 +319,8 @@ if (( PANDA_TRAIN_STATUS != 0 )); then
     echo "  Cause: GPU memory exhausted. Retry with a smaller custom profile:"
     if [[ "$RUN_KIND" == "finetune" ]]; then
       echo "  PANDA_FINETUNE_NUM_ENVS=256 PANDA_FINETUNE_NUM_EVAL_ENVS=32 PANDA_FINETUNE_BATCH_SIZE=64 ./reproduction/train_panda_gpu.sh finetune"
+    elif [[ "$RUN_KIND" == "robustness" ]]; then
+      echo "  PANDA_ROBUSTNESS_NUM_ENVS=256 PANDA_ROBUSTNESS_NUM_EVAL_ENVS=32 PANDA_ROBUSTNESS_BATCH_SIZE=64 ./reproduction/train_panda_gpu.sh robustness"
     else
       echo "  PANDA_FULL_NUM_ENVS=256 PANDA_FULL_NUM_EVAL_ENVS=32 PANDA_FULL_BATCH_SIZE=64 ./reproduction/train_panda_gpu.sh full"
     fi
@@ -286,8 +354,8 @@ echo "Run complete. Output locations:"
 item "Artifact root" "$ARTIFACT_DIR"
 item "Console log" "$ARTIFACT_DIR/console.log"
 item "Environment" "$ARTIFACT_DIR/manifest.json"
-if [[ "$RUN_KIND" == "finetune" ]]; then
-  item "Fine-tune source" "$PANDA_FINETUNE_SELECTION"
+if [[ "$RUN_KIND" == "finetune" || "$RUN_KIND" == "robustness" ]]; then
+  item "Restore source" "$PANDA_SOURCE_RECORD"
 fi
 item "Evaluation summary" "$ARTIFACT_DIR/evaluation-summary.json"
 item "TensorBoard root" "$ARTIFACT_DIR/runs"

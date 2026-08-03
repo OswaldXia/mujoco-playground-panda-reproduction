@@ -42,6 +42,28 @@ def default_vision_config() -> config_dict.ConfigDict:
   )
 
 
+def sample_box_y(
+    rng: jax.Array,
+    base_range: float,
+    target_range: tuple[float, float],
+    target_probability: float,
+) -> jax.Array:
+  """Samples the original y distribution or an opt-in targeted mixture."""
+  if target_probability <= 0.0:
+    return jax.random.uniform(
+        rng, (), minval=-base_range, maxval=base_range
+    )
+  base_rng, target_rng, choice_rng = jax.random.split(rng, 3)
+  base_y = jax.random.uniform(
+      base_rng, (), minval=-base_range, maxval=base_range
+  )
+  target_y = jax.random.uniform(
+      target_rng, (), minval=target_range[0], maxval=target_range[1]
+  )
+  use_target = jax.random.bernoulli(choice_rng, target_probability)
+  return jp.where(use_target, target_y, base_y)
+
+
 def default_config():
   config = config_dict.create(
       ctrl_dt=0.05,
@@ -72,6 +94,9 @@ def default_config():
       vision_config=default_vision_config(),
       obs_noise=config_dict.create(brightness=[1.0, 1.0]),
       box_init_range=0.05,
+      # Optional targeted component. Zero preserves the upstream reset path.
+      box_init_target_y_range=[-0.05, -0.02],
+      box_init_target_probability=0.0,
       success_threshold=0.05,
       action_history_length=1,
       impl='warp',
@@ -98,6 +123,20 @@ class PandaPickCubeCartesian(pick.PandaPickCube):
   ):
 
     mjx_env.MjxEnv.__init__(self, config, config_overrides)
+    target_y_range = self._config.box_init_target_y_range
+    target_probability = float(self._config.box_init_target_probability)
+    if not 0.0 <= target_probability <= 1.0:
+      raise ValueError("box_init_target_probability must be between 0 and 1")
+    base_range = float(self._config.box_init_range)
+    if target_probability > 0.0:
+      if len(target_y_range) != 2 or target_y_range[0] >= target_y_range[1]:
+        raise ValueError(
+            "box_init_target_y_range must contain an increasing [min, max] pair"
+        )
+      if target_y_range[0] < -base_range or target_y_range[1] > base_range:
+        raise ValueError(
+            "box_init_target_y_range must stay inside the base box_init_range"
+        )
     self._vision = config.vision
 
     xml_path = (
@@ -167,9 +206,15 @@ class PandaPickCubeCartesian(pick.PandaPickCube):
     # intialize box position
     rng, rng_box = jax.random.split(rng)
     r_range = self._config.box_init_range
+    box_y = sample_box_y(
+        rng_box,
+        base_range=float(r_range),
+        target_range=tuple(self._config.box_init_target_y_range),
+        target_probability=float(self._config.box_init_target_probability),
+    )
     box_pos = jp.array([
         x_plane,
-        jax.random.uniform(rng_box, (), minval=-r_range, maxval=r_range),
+        box_y,
         0.0,
     ])
 

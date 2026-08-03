@@ -144,6 +144,25 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Next experiment: oversample `y < -0.02` during one controlled fine-tune run,
   then compare the original held-out distribution and the fixed left-side set
 
+## Targeted robustness experiment
+
+- Implementation branch: `experiment/left-y-robustness`
+- Restore source: latest converged checkpoint in `panda-vision-finetune`, with
+  an explicit checkpoint override available
+- Default workload: 3M timesteps at learning rate `0.0001`
+- Sampling: 50% original `[-0.05,0.05]` uniform plus 50% targeted
+  `[-0.05,-0.02]` uniform; default environment behavior remains unchanged when
+  the target probability is zero
+- Regression suite: 1,024 episodes each on the original distribution, complete
+  left region, and weakest observed bin
+- Acceptance: preserve at least 95% aggregate on the original distribution,
+  reach at least 95% on the left region, and at least 93% on the hard bin, with
+  separate worst-seed safeguards
+- Tool validation: ten local tests pass, including exact preservation of the
+  upstream default RNG path, mixture support, interval inference, and Fisher
+  comparison logic
+- Status: ready for the Linux NVIDIA training run; no result recorded yet
+
 ## Known hardware boundary
 
 Apple Silicon is used for source inspection, state-environment debugging, and

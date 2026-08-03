@@ -46,7 +46,7 @@ for ((index = 0; index < ${#ARGS[@]}; index++)); do
   fi
 done
 
-EVAL_DIR="$PROJECT_DIR/reproduction/artifacts/panda-independent-eval"
+EVAL_DIR="${PANDA_EVAL_ARTIFACT_DIR:-$PROJECT_DIR/reproduction/artifacts/panda-independent-eval}"
 mkdir -p "$EVAL_DIR"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 CONSOLE_LOG="$EVAL_DIR/console-$STAMP.log"

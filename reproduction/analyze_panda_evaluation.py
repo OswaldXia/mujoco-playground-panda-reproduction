@@ -234,8 +234,8 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument("--report", type=Path, required=True)
   parser.add_argument("--output-dir", type=Path)
   parser.add_argument("--bins", type=positive_int, default=10)
-  parser.add_argument("--y-min", type=float, default=-0.05)
-  parser.add_argument("--y-max", type=float, default=0.05)
+  parser.add_argument("--y-min", type=float)
+  parser.add_argument("--y-max", type=float)
   parser.add_argument("--overwrite", action="store_true")
   return parser
 
@@ -255,7 +255,14 @@ def main() -> None:
   output_dir.mkdir(parents=True, exist_ok=True)
 
   report, records = load_episode_records(report_path)
-  bins = bin_episode_records(records, args.bins, args.y_min, args.y_max)
+  if (args.y_min is None) != (args.y_max is None):
+    raise ValueError("--y-min and --y-max must be supplied together")
+  report_range = report["evaluation"].get("initial_y_sampling", {}).get(
+      "range", [-0.05, 0.05]
+  )
+  y_min = args.y_min if args.y_min is not None else float(report_range[0])
+  y_max = args.y_max if args.y_max is not None else float(report_range[1])
+  bins = bin_episode_records(records, args.bins, y_min, y_max)
   failures = [record for record in records if not record["success"]]
   failures.sort(key=lambda item: (item["initial_box_position"][1], item["seed"]))
 
@@ -288,7 +295,7 @@ def main() -> None:
       "failures": len(failures),
       "aggregate_success_rate": aggregate.get("success_rate"),
       "position_axis": "initial_box_position.y",
-      "position_range": [args.y_min, args.y_max],
+      "position_range": [y_min, y_max],
       "lowest_success_bin": lowest_success_bin,
       "bins": bins,
       "artifacts": {
@@ -303,7 +310,7 @@ def main() -> None:
   print("\nPosition-stratified analysis complete")
   print(f"  {'Episodes':<22}{len(records)}")
   print(f"  {'Failures':<22}{len(failures)}")
-  print(f"  {'Position bins':<22}{len(bins)} across [{args.y_min}, {args.y_max}]")
+  print(f"  {'Position bins':<22}{len(bins)} across [{y_min}, {y_max}]")
   print(
       f"  {'Lowest-success bin':<22}"
       f"[{lowest_success_bin['y_lower']:.3f}, "

@@ -223,6 +223,8 @@ def build_parser() -> argparse.ArgumentParser:
   parser.add_argument("--output", type=Path)
   parser.add_argument("--target-success", type=probability, default=0.90)
   parser.add_argument("--minimum-seed-success", type=probability, default=0.85)
+  parser.add_argument("--box-y-min", type=float)
+  parser.add_argument("--box-y-max", type=float)
   parser.add_argument("--contact-capacity-per-env", type=positive_int, default=48)
   parser.add_argument("--heartbeat-seconds", type=float, default=30.0)
   parser.add_argument("--allow-cpu", action="store_true")
@@ -242,6 +244,10 @@ def main() -> None:
   checkpoint_path = resolve_checkpoint(args.checkpoint)
   if args.heartbeat_seconds < 0:
     raise ValueError("--heartbeat-seconds must be non-negative")
+  if (args.box_y_min is None) != (args.box_y_max is None):
+    raise ValueError("--box-y-min and --box-y-max must be supplied together")
+  if args.box_y_min is not None and args.box_y_min >= args.box_y_max:
+    raise ValueError("--box-y-min must be smaller than --box-y-max")
 
   stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%SZ")
   output_path = (
@@ -304,6 +310,29 @@ def main() -> None:
       "naconmax": contact_capacity,
       "naccdmax": contact_capacity,
   }
+  base_y_range = [
+      -float(env_config.box_init_range),
+      float(env_config.box_init_range),
+  ]
+  if args.box_y_min is not None:
+    if args.box_y_min < base_y_range[0] or args.box_y_max > base_y_range[1]:
+      raise ValueError(
+          f"Requested box y range must stay inside {base_y_range}"
+      )
+    env_overrides.update({
+        "box_init_target_y_range": [args.box_y_min, args.box_y_max],
+        "box_init_target_probability": 1.0,
+    })
+    initial_y_sampling = {
+        "mode": "targeted_uniform",
+        "range": [args.box_y_min, args.box_y_max],
+    }
+  else:
+    initial_y_sampling = {"mode": "original_uniform", "range": base_y_range}
+  print_item(
+      "Initial cube y",
+      f"{initial_y_sampling['mode']} {initial_y_sampling['range']}",
+  )
   base_env = registry.load(
       ENV_NAME, config=env_config, config_overrides=env_overrides
   )
@@ -484,6 +513,7 @@ def main() -> None:
           "episode_length": episode_length,
           "official_episode_length": official_episode_length,
           "contact_capacity": contact_capacity,
+          "initial_y_sampling": initial_y_sampling,
           "duration_seconds": evaluation_duration,
           "per_seed": per_seed,
           "episode_records": episode_records,

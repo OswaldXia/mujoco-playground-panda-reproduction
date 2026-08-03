@@ -2,8 +2,8 @@
 set -euo pipefail
 
 RUN_KIND="${1:-finetune}"
-if [[ "$RUN_KIND" != "smoke" && "$RUN_KIND" != "full" && "$RUN_KIND" != "finetune" && "$RUN_KIND" != "official" ]]; then
-  echo "Usage: $0 [smoke|full|finetune|official]"
+if [[ "$RUN_KIND" != "smoke" && "$RUN_KIND" != "full" && "$RUN_KIND" != "finetune" && "$RUN_KIND" != "official" && "$RUN_KIND" != "robustness" ]]; then
+  echo "Usage: $0 [smoke|full|finetune|official|robustness]"
   exit 2
 fi
 

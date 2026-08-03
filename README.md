@@ -178,6 +178,24 @@ evaluation subsequently passed with `0.966797` aggregate success. Use
 `backup_panda_run.sh` to preserve the full ignored artifact tree; the compact
 evaluation evidence is versioned in `reproduction/results/`.
 
+The follow-up analysis found a statistically supported weakness for initial
+cube positions left of `y=-0.02`. The controlled robustness experiment restores
+the converged checkpoint, trains for 3M steps at learning rate `1e-4`, and
+draws half of resets from `[-0.05,-0.02]` while retaining the original uniform
+distribution for the other half:
+
+```bash
+./reproduction/smoke_panda_robustness_gpu.sh
+./reproduction/train_panda_gpu.sh robustness
+./reproduction/evaluate_panda_robustness_gpu.sh
+```
+
+The smoke command validates checkpoint restore and targeted sampling for 100k
+steps in a separate artifact directory. The final command evaluates the
+original distribution, the full left region,
+and the hardest observed bin separately. It is the required regression check;
+the training-time mixture evaluation alone is not sufficient.
+
 ## Repository layout
 
 ```text
@@ -187,10 +205,13 @@ reproduction/
 ├── vision_backend_probe.py      # 64 x 64 RGB reset/step capability test
 ├── setup_gpu.sh                 # Linux CUDA environment and preflight
 ├── train_panda_gpu.sh           # Smoke, adaptive, fine-tune, and exact profiles
+├── smoke_panda_robustness_gpu.sh # Isolated 100k targeted-pipeline check
 ├── backup_panda_run.sh          # Non-overwriting archive plus SHA-256
 ├── evaluate_panda_gpu.sh        # Linux GPU independent-evaluation launcher
+├── evaluate_panda_robustness_gpu.sh # Three-distribution regression suite
 ├── evaluate_panda_checkpoint.py # Multi-seed metrics and per-episode records
 ├── analyze_panda_evaluation.py  # Position bins, plot, CSV, and failure cases
+├── summarize_robustness_evaluation.py # Baseline comparison and decision
 ├── select_best_checkpoint.py    # Success-first checkpoint selection
 ├── summarize_tensorboard.py     # Reward and success metric extraction
 ├── results/                     # Committed machine-readable evidence

@@ -261,6 +261,76 @@ start with the default 256 environments; if it reports GPU out-of-memory,
 retry with 128. Each seed is evaluated sequentially, and the command prints a
 heartbeat during the first JIT compilation.
 
+## Targeted left-side robustness experiment
+
+The position-stratified evaluation identified `y < -0.02` as a relative weak
+region: 265/290 success (`91.38%`) versus 723/734 (`98.50%`) elsewhere. First
+validate checkpoint restore and the new sampling path with an isolated 100k
+smoke run:
+
+```bash
+./reproduction/smoke_panda_robustness_gpu.sh
+```
+
+Its outputs remain under
+`reproduction/artifacts/panda-vision-robustness-smoke/` and do not overwrite the
+formal experiment. After it completes, run one controlled fine-tune from the
+converged step-10,076,160 checkpoint:
+
+```bash
+./reproduction/train_panda_gpu.sh robustness
+```
+
+The default profile is intentionally smaller than the converged fine-tune:
+
+- 3,000,000 timesteps;
+- learning rate `0.0001`;
+- the same VRAM-aware 512/64/128 environment and batch profile on an 11 GiB
+  RTX 2080 Ti;
+- 50% original uniform resets over `[-0.05,0.05]` and 50% targeted uniform
+  resets over `[-0.05,-0.02]`.
+
+Because the original component also lands left of `-0.02` 30% of the time,
+the resulting training mixture places approximately 65% of resets in the weak
+left region while preserving coverage of the complete original distribution.
+Artifacts are isolated under
+`reproduction/artifacts/panda-vision-robustness/`. Override only when running a
+deliberate ablation, for example:
+
+```bash
+PANDA_ROBUSTNESS_TIMESTEPS=2000000 \
+PANDA_ROBUSTNESS_LEARNING_RATE=0.0001 \
+PANDA_ROBUSTNESS_TARGET_PROBABILITY=0.5 \
+  ./reproduction/train_panda_gpu.sh robustness
+```
+
+After training, run the fixed regression suite:
+
+```bash
+./reproduction/evaluate_panda_robustness_gpu.sh
+```
+
+It selects the strongest robustness checkpoint and evaluates 1,024 episodes on
+each of three distributions:
+
+| Distribution | Range | Acceptance |
+| --- | --- | --- |
+| Original | `[-0.05,0.05]` | aggregate `>=0.95`, worst seed `>=0.90` |
+| Left | `[-0.05,-0.02]` | aggregate `>=0.95`, worst seed `>=0.90` |
+| Hard bin | `[-0.03,-0.02]` | aggregate `>=0.93`, worst seed `>=0.85` |
+
+The suite writes all raw reports and position plots under a timestamped
+`reproduction/artifacts/panda-robustness-eval/` directory, then produces
+`robustness-summary.json` with absolute gains and two-sided Fisher exact tests
+against the recorded baseline. A failed criterion is a valid experimental
+result and must not be hidden by selecting only favorable rollouts.
+
+Back up a completed robustness run separately with:
+
+```bash
+./reproduction/backup_panda_run.sh robustness
+```
+
 All training modes use seed 1, write TensorBoard scalars, and extract the final
 mean episode reward and `reward/success` metric to `evaluation-summary.json`.
 The console prints five named phases, a compact hardware/training plan, reward
