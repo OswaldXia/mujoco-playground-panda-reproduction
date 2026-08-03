@@ -113,7 +113,10 @@ def wilson_interval(successes: int, total: int) -> tuple[float, float]:
       )
       / denominator
   )
-  return max(0.0, center - margin), min(1.0, center + margin)
+  return (
+      max(0.0, min(rate, center - margin)),
+      min(1.0, max(rate, center + margin)),
+  )
 
 
 def format_duration(seconds: float) -> str:

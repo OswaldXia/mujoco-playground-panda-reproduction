@@ -38,6 +38,11 @@ class AnalyzePandaEvaluationTest(unittest.TestCase):
     self.assertIsNone(bins[1]["success_rate"])
     self.assertIsNone(bins[1]["success_rate_wilson_95"])
 
+  def test_wilson_interval_contains_zero_success_boundary(self):
+    low, high = MODULE.wilson_interval(0, 3)
+    self.assertEqual(low, 0.0)
+    self.assertGreater(high, 0.0)
+
   def test_invalid_position_range_is_rejected(self):
     with self.assertRaises(ValueError):
       MODULE.bin_episode_records([], bins=2, y_min=0.05, y_max=-0.05)

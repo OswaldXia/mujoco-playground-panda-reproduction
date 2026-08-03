@@ -31,7 +31,10 @@ def wilson_interval(successes: int, total: int) -> tuple[float, float]:
       )
       / denominator
   )
-  return max(0.0, center - margin), min(1.0, center + margin)
+  return (
+      max(0.0, min(rate, center - margin)),
+      min(1.0, max(rate, center + margin)),
+  )
 
 
 def load_episode_records(report_path: Path) -> tuple[dict[str, Any], list[dict]]:
@@ -180,8 +183,8 @@ def write_position_plot(
   upper_errors = []
   for rate, item in zip(rates, bins, strict=True):
     interval = item["success_rate_wilson_95"]
-    lower_errors.append(rate - interval[0] if interval else 0.0)
-    upper_errors.append(interval[1] - rate if interval else 0.0)
+    lower_errors.append(max(0.0, rate - interval[0]) if interval else 0.0)
+    upper_errors.append(max(0.0, interval[1] - rate) if interval else 0.0)
   rate_axis.errorbar(
       centers,
       rates,

@@ -333,6 +333,17 @@ The suite writes all raw reports and position plots under a timestamped
 against the recorded baseline. A failed criterion is a valid experimental
 result and must not be hidden by selecting only favorable rollouts.
 
+If plotting or a later distribution fails after a raw report has been written,
+resume the same directory instead of repeating completed GPU rollouts:
+
+```bash
+./reproduction/evaluate_panda_robustness_gpu.sh \
+  --resume /absolute/path/to/panda-robustness-eval/<run>
+```
+
+Resume mode validates and reuses each existing 1,024-episode report, regenerates
+its analysis with overwrite enabled, and runs only the missing distributions.
+
 Back up a completed robustness run separately with:
 
 ```bash
