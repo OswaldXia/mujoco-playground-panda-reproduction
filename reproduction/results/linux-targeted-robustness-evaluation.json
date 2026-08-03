@@ -1,0 +1,131 @@
+{
+  "date": "2026-08-03",
+  "environment": "PandaPickCubeCartesian",
+  "experiment": "targeted left-y robustness fine-tune",
+  "selected_checkpoint_step": 2007040,
+  "evaluations": {
+    "original": {
+      "range": [-0.05, 0.05],
+      "episodes": 1024,
+      "successes": 1003,
+      "failures": 21,
+      "success_rate": 0.9794921875,
+      "success_rate_wilson_95": [
+        0.9688522161857949,
+        0.9865480467367664
+      ],
+      "worst_seed_success_rate": 0.96875,
+      "mean_reward": 9.932527542114258,
+      "acceptance_passed": true
+    },
+    "left": {
+      "range": [-0.05, -0.02],
+      "episodes": 1024,
+      "successes": 968,
+      "failures": 56,
+      "success_rate": 0.9453125,
+      "success_rate_wilson_95": [
+        0.9296488415149479,
+        0.9576475330119115
+      ],
+      "worst_seed_success_rate": 0.9453125,
+      "mean_reward": 9.599138259887695,
+      "acceptance_passed": false
+    },
+    "hard": {
+      "range": [-0.03, -0.02],
+      "episodes": 1024,
+      "successes": 970,
+      "failures": 54,
+      "success_rate": 0.947265625,
+      "success_rate_wilson_95": [
+        0.93182845585867,
+        0.9593595694336581
+      ],
+      "worst_seed_success_rate": 0.9375,
+      "mean_reward": 9.700288772583008,
+      "acceptance_passed": true
+    }
+  },
+  "baseline_comparison": {
+    "original": {
+      "baseline_success_rate": 0.96484375,
+      "new_success_rate": 0.9794921875,
+      "absolute_change": 0.0146484375,
+      "fisher_two_sided_p_value": 0.0591078285878093
+    },
+    "left": {
+      "baseline_success_rate": 0.9137931034482759,
+      "new_success_rate": 0.9453125,
+      "absolute_change": 0.03151939655172409,
+      "fisher_two_sided_p_value": 0.05334228304032489
+    },
+    "hard": {
+      "baseline_success_rate": 0.881578947368421,
+      "new_success_rate": 0.947265625,
+      "absolute_change": 0.06568667763157898,
+      "fisher_two_sided_p_value": 0.03426668635525888
+    }
+  },
+  "pre_registered_acceptance": {
+    "criteria": {
+      "original_success_rate_at_least_0_95": true,
+      "original_worst_seed_at_least_0_90": true,
+      "left_success_rate_at_least_0_95": false,
+      "left_worst_seed_at_least_0_90": true,
+      "hard_success_rate_at_least_0_93": true,
+      "hard_worst_seed_at_least_0_85": true
+    },
+    "passed": false,
+    "failed_criterion": "Left success was 968/1024 (94.53%); 973 successes were required for 95%."
+  },
+  "statistical_context": {
+    "left_vs_absolute_0_95_target": {
+      "method": "two-sided exact binomial test",
+      "p_value": 0.47325518285225804,
+      "interpretation": "The observed left result is not statistically distinguishable from 95%, but the pre-registered point-estimate gate still failed."
+    },
+    "hard_vs_absolute_0_93_target": {
+      "method": "two-sided exact binomial test",
+      "p_value": 0.03176016987603891
+    }
+  },
+  "assessment": {
+    "classification": "partial success",
+    "supported_claims": [
+      "Original-distribution performance was preserved and its point estimate increased.",
+      "Hard-bin success improved by 6.57 percentage points with a significant Fisher comparison.",
+      "Left-region success improved by 3.15 percentage points and every worst-seed safeguard passed."
+    ],
+    "unsupported_claim": "The experiment did not pass every pre-registered acceptance criterion because left-region success was below 95% by five episodes.",
+    "recommendation": "Report the partial result without changing the threshold or post-hoc checkpoint selection; further threshold chasing is not required for the reproduction project."
+  },
+  "runtime": {
+    "hardware": "NVIDIA GeForce RTX 2080 Ti 11 GiB",
+    "jax_backend": "gpu",
+    "report_commits": [
+      "bffe1898dc0124812b52971216ee4d443ca3045c",
+      "4a692ed3d55f0c746b7936bdef889cb487ee6d26"
+    ],
+    "git_branch": "experiment/left-y-robustness",
+    "git_dirty": false
+  },
+  "source_files": {
+    "robustness_summary": {
+      "filename": "robustness-summary.json",
+      "sha256": "a8ee89bc93ca2cf31019cfb13da0679a3a9e3c29c6ffd0c4475571c14ca7e7bc"
+    },
+    "original_report": {
+      "filename": "original.json",
+      "sha256": "1b515fee767e2f88a2e8bb3f0995f3dd86f4e1fd77fb9daf1d3e08c31f448952"
+    },
+    "left_report": {
+      "filename": "left.json",
+      "sha256": "6989c1e5731c2f3f209279f93fb917a00db971abac191221e5de85f99f1bb3a8"
+    },
+    "hard_report": {
+      "filename": "hard.json",
+      "sha256": "ac8843ac6b4306266c25e8a629571c10bf8cfa0bc1415a2fe10186f8f8856f94"
+    }
+  }
+}

@@ -344,6 +344,17 @@ resume the same directory instead of repeating completed GPU rollouts:
 Resume mode validates and reuses each existing 1,024-episode report, regenerates
 its analysis with overwrite enabled, and runs only the missing distributions.
 
+The completed experiment selected robustness checkpoint step 2,007,040. It
+preserved the original distribution at 1003/1,024 (`97.95%`), improved the left
+region from `91.38%` to 968/1,024 (`94.53%`), and improved the hard bin from
+`88.16%` to 970/1,024 (`94.73%`). The hard-bin comparison was statistically
+significant (`p=0.0343`); the left comparison was borderline (`p=0.0533`). The
+pre-registered overall decision remains **FAIL** because the left point estimate
+missed its 95% threshold by five episodes. This is recorded as a partial success,
+without changing the threshold or choosing another checkpoint after seeing the
+test results. Evidence is in
+`reproduction/results/linux-targeted-robustness-evaluation.json`.
+
 Back up a completed robustness run separately with:
 
 ```bash

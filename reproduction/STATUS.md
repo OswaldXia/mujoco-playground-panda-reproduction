@@ -26,7 +26,8 @@
 - [x] Independent held-out multi-seed evaluation completed
 - [x] Position-stratified failure analysis completed
 - [x] Targeted robustness GPU smoke completed
-- [ ] Targeted robustness experiment completed
+- [x] Targeted robustness experiment completed
+- [ ] All targeted robustness acceptance criteria passed
 
 ## macOS state-smoke result (2026-08-02)
 
@@ -167,7 +168,16 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Smoke assessment: pipeline passed. The final two-episode difference from the
   initial 64-episode evaluation is too small to support a robustness conclusion.
 - Evidence: `reproduction/results/linux-robustness-smoke.json`
-- Status: ready for the formal 3M-step Linux NVIDIA training run
+- Selected checkpoint: robustness step 2,007,040
+- Original regression: 1003/1,024 (`97.95%`), worst seed `96.88%`; passed
+- Left regression: 968/1,024 (`94.53%`), worst seed `94.53%`; point estimate
+  improved by 3.15 percentage points but missed the 95% gate by five successes
+- Hard-bin regression: 970/1,024 (`94.73%`), worst seed `93.75%`; improved by
+  6.57 percentage points with Fisher `p=0.0343`
+- Overall decision: partial success / pre-registered acceptance FAIL. Five of
+  six criteria passed; the threshold is not changed after observing the result.
+- Evidence: `reproduction/results/linux-targeted-robustness-evaluation.json`
+- Status: experiment complete; keep the branch separate from `main`
 
 ## Known hardware boundary
 
