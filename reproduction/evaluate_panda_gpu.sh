@@ -6,6 +6,7 @@ VENV_DIR="${VENV_DIR:-$PROJECT_DIR/.venv}"
 PYTHON="$VENV_DIR/bin/python"
 
 export JAX_DEFAULT_MATMUL_PRECISION=highest
+export MPLCONFIGDIR="${MPLCONFIGDIR:-$PROJECT_DIR/reproduction/artifacts/matplotlib-cache}"
 export MUJOCO_GL=egl
 export PYTHONUNBUFFERED=1
 export TF_GPU_ALLOCATOR="${TF_GPU_ALLOCATOR:-cuda_malloc_async}"
@@ -26,12 +27,22 @@ cd "$PROJECT_DIR"
 ARGS=("$@")
 HAS_CHECKPOINT=false
 HAS_OUTPUT=false
-for argument in "${ARGS[@]}"; do
+OUTPUT_PATH=""
+for ((index = 0; index < ${#ARGS[@]}; index++)); do
+  argument="${ARGS[$index]}"
   if [[ "$argument" == "--checkpoint" || "$argument" == --checkpoint=* ]]; then
     HAS_CHECKPOINT=true
   fi
-  if [[ "$argument" == "--output" || "$argument" == --output=* ]]; then
+  if [[ "$argument" == "--output" ]]; then
     HAS_OUTPUT=true
+    if (( index + 1 >= ${#ARGS[@]} )); then
+      echo "--output requires a path."
+      exit 2
+    fi
+    OUTPUT_PATH="${ARGS[$((index + 1))]}"
+  elif [[ "$argument" == --output=* ]]; then
+    HAS_OUTPUT=true
+    OUTPUT_PATH="${argument#--output=}"
   fi
 done
 
@@ -40,7 +51,8 @@ mkdir -p "$EVAL_DIR"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 CONSOLE_LOG="$EVAL_DIR/console-$STAMP.log"
 if [[ "$HAS_OUTPUT" == false ]]; then
-  ARGS+=(--output "$EVAL_DIR/evaluation-$STAMP.json")
+  OUTPUT_PATH="$EVAL_DIR/evaluation-$STAMP.json"
+  ARGS+=(--output "$OUTPUT_PATH")
 fi
 
 if [[ "$HAS_CHECKPOINT" == false ]]; then
@@ -108,8 +120,28 @@ if (( STATUS != 0 )); then
   exit "$STATUS"
 fi
 
+echo | tee -a "$CONSOLE_LOG"
+echo "[analysis] Position-stratified failure analysis" | tee -a "$CONSOLE_LOG"
+ANALYSIS_DIR="${OUTPUT_PATH%.*}-analysis"
+set +e
+"$PYTHON" reproduction/analyze_panda_evaluation.py \
+  --report "$OUTPUT_PATH" \
+  --output-dir "$ANALYSIS_DIR" \
+  2>&1 | tee -a "$CONSOLE_LOG"
+ANALYSIS_STATUS=${PIPESTATUS[0]}
+set -e
+if (( ANALYSIS_STATUS != 0 )); then
+  echo "[failed] Evaluation passed, but analysis exited with status $ANALYSIS_STATUS." \
+    | tee -a "$CONSOLE_LOG"
+  echo "[action] The raw evaluation report is intact at $OUTPUT_PATH." \
+    | tee -a "$CONSOLE_LOG"
+  exit "$ANALYSIS_STATUS"
+fi
+
 {
   echo
   echo "Evaluation command complete."
+  printf "  %-22s%s\n" "Evaluation report" "$OUTPUT_PATH"
+  printf "  %-22s%s\n" "Analysis directory" "$ANALYSIS_DIR"
   printf "  %-22s%s\n" "Console log" "$CONSOLE_LOG"
 } | tee -a "$CONSOLE_LOG"

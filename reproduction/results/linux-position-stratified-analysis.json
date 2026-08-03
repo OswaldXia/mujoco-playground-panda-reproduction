@@ -1,0 +1,148 @@
+{
+  "date": "2026-08-03",
+  "environment": "PandaPickCubeCartesian",
+  "checkpoint_step": 10076160,
+  "protocol": {
+    "deterministic_policy": true,
+    "held_out_seeds": [
+      101,
+      202,
+      303,
+      404
+    ],
+    "episodes_per_seed": 256,
+    "episodes": 1024,
+    "position_axis": "initial_box_position.y",
+    "position_range": [
+      -0.05,
+      0.05
+    ],
+    "position_bins": 10
+  },
+  "aggregate": {
+    "successes": 988,
+    "failures": 36,
+    "success_rate": 0.96484375,
+    "success_rate_wilson_95": [
+      0.9517138090868406,
+      0.9744990730947055
+    ],
+    "worst_seed_success_rate": 0.94921875,
+    "mean_reward": 9.908309936523438,
+    "acceptance_passed": true
+  },
+  "grouped_results": {
+    "negative_y": {
+      "episodes": 494,
+      "successes": 467,
+      "failures": 27,
+      "success_rate": 0.9453441295546559,
+      "success_rate_wilson_95": [
+        0.9216470636234632,
+        0.9621684406985128
+      ]
+    },
+    "nonnegative_y": {
+      "episodes": 530,
+      "successes": 521,
+      "failures": 9,
+      "success_rate": 0.9830188679245283,
+      "success_rate_wilson_95": [
+        0.9680452967959763,
+        0.9910409478937039
+      ]
+    },
+    "y_below_negative_0_02": {
+      "episodes": 290,
+      "successes": 265,
+      "failures": 25,
+      "success_rate": 0.9137931034482759,
+      "success_rate_wilson_95": [
+        0.8758394932848796,
+        0.9409274835849539
+      ]
+    },
+    "y_at_or_above_negative_0_02": {
+      "episodes": 734,
+      "successes": 723,
+      "failures": 11,
+      "success_rate": 0.9850136239782016,
+      "success_rate_wilson_95": [
+        0.973365352653361,
+        0.9916115966468353
+      ]
+    },
+    "hard_bin_negative_0_03_to_negative_0_02": {
+      "episodes": 76,
+      "successes": 67,
+      "failures": 9,
+      "success_rate": 0.881578947368421,
+      "success_rate_wilson_95": [
+        0.7900078224920806,
+        0.9364318099582094
+      ]
+    },
+    "outside_hard_bin": {
+      "episodes": 948,
+      "successes": 921,
+      "failures": 27,
+      "success_rate": 0.9715189873417721,
+      "success_rate_wilson_95": [
+        0.9588786239159056,
+        0.9803534212060224
+      ]
+    }
+  },
+  "hypothesis_tests": {
+    "negative_y_vs_nonnegative_y": {
+      "method": "two-sided Fisher exact test",
+      "p_value": 0.0010992509669401928
+    },
+    "y_below_negative_0_02_vs_remainder": {
+      "method": "two-sided Fisher exact test",
+      "p_value": 2.1726974965935027e-07
+    },
+    "hard_bin_vs_remainder": {
+      "method": "two-sided Fisher exact test",
+      "p_value": 0.0007761556168517685,
+      "bonferroni_adjusted_for_10_bins": 0.007761556168517685
+    },
+    "hard_bin_vs_absolute_0_90_target": {
+      "method": "two-sided exact binomial test",
+      "p_value": 0.5649553727376646
+    }
+  },
+  "repeatability": {
+    "previous_success_rate": 0.966796875,
+    "current_success_rate": 0.96484375,
+    "absolute_difference": 0.001953125,
+    "assessment": "Both runs pass; the 0.20 percentage-point difference does not change the aggregate conclusion."
+  },
+  "interpretation": {
+    "overall": "The checkpoint remains accepted and robust on the original held-out distribution.",
+    "spatial": "The left side below y=-0.02 is a statistically supported relative weakness, with the lowest point estimate in [-0.03,-0.02).",
+    "caution": "The hard bin is weaker than the rest but is not statistically distinguishable from the absolute 0.90 target by itself.",
+    "recommended_experiment": "Use targeted left-side sampling for one controlled fine-tune experiment before considering broad visual domain randomization."
+  },
+  "runtime": {
+    "hardware": "NVIDIA GeForce RTX 2080 Ti 11 GiB",
+    "jax_backend": "gpu",
+    "git_commit": "e48c801932ef3359a0696cd2f0911199e0c76210",
+    "git_branch": "analysis/failure-map",
+    "git_dirty": false
+  },
+  "source_files": {
+    "evaluation_report": {
+      "filename": "evaluation-20260803T055922Z-614377.json",
+      "sha256": "672b082cc7be29a5725f8ea0908a7204e44e3c760c612dabb4ce7b75e5adb381"
+    },
+    "analysis_summary": {
+      "filename": "analysis-summary.json",
+      "sha256": "d97c9eb8a6c44684bcd5e53240ffa92958c283824318ecd461f528f2e52079d6"
+    },
+    "position_plot": {
+      "filename": "position-success-rate.png",
+      "sha256": "1df2ecc41858eba260d6fb6bfb521ffa20eb80819beb85766c7cdc9f3b74cf61"
+    }
+  }
+}

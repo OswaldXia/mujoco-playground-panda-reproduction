@@ -24,6 +24,8 @@
 - [x] Best-checkpoint fine-tuning completed
 - [x] Training evaluation target (`>= 0.9`) reached
 - [x] Independent held-out multi-seed evaluation completed
+- [x] Position-stratified failure analysis completed
+- [ ] Targeted robustness experiment completed
 
 ## macOS state-smoke result (2026-08-02)
 
@@ -117,6 +119,30 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Evidence: `reproduction/results/linux-independent-evaluation.json`
 - Assessment: the pinned simulation reproduction is complete and robust across
   the selected held-out seeds. Real-robot performance remains outside scope.
+
+## Position-stratified failure analysis
+
+- Tooling status: completed on branch `analysis/failure-map`
+- New evaluation schema: records the initial position, result, reward, and
+  episode length for every rollout while preserving aggregate and per-seed data
+- Automatic outputs: complete episode CSV, ten y-position bins with Wilson
+  intervals, success-rate plot, analysis summary, and reproducible failure list
+- Validation: five unit tests cover boundary assignment, empty bins, aggregate
+  consistency, invalid ranges, and actual CSV/PNG generation
+- Schema-version-2 result: 988/1,024 (`96.48%`), with aggregate acceptance
+  still passing and only a 0.20 percentage-point change from the first run
+- Left region `y < -0.02`: 265/290 (`91.38%`); remainder: 723/734 (`98.50%`)
+- Weakest bin `[-0.03, -0.02)`: 67/76 (`88.16%`), versus 921/948 (`97.15%`)
+  outside that bin
+- Statistical assessment: left region versus remainder has two-sided Fisher
+  `p = 2.17e-7`; weakest bin versus remainder has `p = 0.000776`, or `0.00776`
+  after Bonferroni adjustment for ten exploratory bins
+- Interpretation: the overall checkpoint is accepted, while the left side is a
+  statistically supported relative weakness. The weakest bin alone is not
+  significantly below the absolute 90% target (`p = 0.565`).
+- Evidence: `reproduction/results/linux-position-stratified-analysis.json`
+- Next experiment: oversample `y < -0.02` during one controlled fine-tune run,
+  then compare the original held-out distribution and the fixed left-side set
 
 ## Known hardware boundary
 

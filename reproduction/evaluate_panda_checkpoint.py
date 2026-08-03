@@ -357,6 +357,7 @@ def main() -> None:
 
   print("\n[3/4] Held-out multi-seed evaluation", flush=True)
   per_seed: list[dict[str, Any]] = []
+  episode_records: list[dict[str, Any]] = []
   all_success: list[np.ndarray] = []
   all_rewards: list[np.ndarray] = []
   all_lengths: list[np.ndarray] = []
@@ -397,6 +398,20 @@ def main() -> None:
     successes = int(np.count_nonzero(success_mask))
     duration = time.monotonic() - started
     failure_positions = initial_box_positions[~success_mask]
+
+    for environment_index in range(args.num_envs):
+      episode_records.append({
+          "episode_id": f"{seed}:{environment_index:04d}",
+          "seed": seed,
+          "environment_index": environment_index,
+          "initial_box_position": np.round(
+              initial_box_positions[environment_index], 6
+          ).tolist(),
+          "success": bool(success_mask[environment_index]),
+          "success_metric": float(success_values[environment_index]),
+          "reward": float(rewards[environment_index]),
+          "episode_length": int(episode_lengths[environment_index]),
+      })
 
     seed_result = {
         "seed": seed,
@@ -457,7 +472,7 @@ def main() -> None:
 
   git_status = git_value(project_dir, "status", "--porcelain")
   report = {
-      "schema_version": 1,
+      "schema_version": 2,
       "generated_at_utc": datetime.datetime.now(datetime.UTC).isoformat(),
       "environment": ENV_NAME,
       "checkpoint": str(checkpoint_path),
@@ -471,6 +486,7 @@ def main() -> None:
           "contact_capacity": contact_capacity,
           "duration_seconds": evaluation_duration,
           "per_seed": per_seed,
+          "episode_records": episode_records,
           "aggregate": {
               "episodes": total,
               "successes": successes,

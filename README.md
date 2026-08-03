@@ -68,11 +68,14 @@ profile on a MacBook Air with an Apple M1 and 16 GB of memory.
 | Initial full-run replay videos | Completed; no visible successful lift |
 | Best-checkpoint fine-tuning | Completed; final success 62/64 (96.875%) |
 | Independent held-out evaluation | Passed; 990/1,024 (96.68%), worst seed 95.70% |
+| Position-stratified evaluation | Passed overall; identified a significant left-side weakness |
 
 Machine-readable evidence is committed in
 [`macos-state-smoke.json`](reproduction/results/macos-state-smoke.json) and
 [`macos-vision-probe.json`](reproduction/results/macos-vision-probe.json), and
 [`linux-independent-evaluation.json`](reproduction/results/linux-independent-evaluation.json).
+The follow-up spatial analysis is in
+[`linux-position-stratified-analysis.json`](reproduction/results/linux-position-stratified-analysis.json).
 
 The final deterministic held-out evaluation used four seeds and 256 episodes
 per seed. It succeeded in 990 of 1,024 episodes (`96.68%`), with a 95% Wilson
@@ -186,10 +189,12 @@ reproduction/
 ├── train_panda_gpu.sh           # Smoke, adaptive, fine-tune, and exact profiles
 ├── backup_panda_run.sh          # Non-overwriting archive plus SHA-256
 ├── evaluate_panda_gpu.sh        # Linux GPU independent-evaluation launcher
-├── evaluate_panda_checkpoint.py # Multi-seed metrics and confidence interval
+├── evaluate_panda_checkpoint.py # Multi-seed metrics and per-episode records
+├── analyze_panda_evaluation.py  # Position bins, plot, CSV, and failure cases
 ├── select_best_checkpoint.py    # Success-first checkpoint selection
 ├── summarize_tensorboard.py     # Reward and success metric extraction
 ├── results/                     # Committed machine-readable evidence
+├── tests/                       # Reproduction-tool unit tests
 ├── README.md                    # Detailed execution guide
 └── STATUS.md                    # Completed and pending checklist
 ```

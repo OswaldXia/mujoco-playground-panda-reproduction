@@ -197,20 +197,39 @@ seeds (`101,202,303,404`), with 256 independent episodes per seed and 1,024
 episodes in total. This is inference-only: it never updates or overwrites the
 policy.
 
-The report includes successes and rewards by seed, aggregate success rate, a
-95% Wilson confidence interval, worst-seed success, and initial cube positions
-for failures. The default acceptance rule is aggregate success `>= 0.90` and
-worst-seed success `>= 0.85`. The terminal groups related fields in aligned,
-readable sections. Each completed seed reports its own and cumulative success,
-reward, elapsed time, and estimated remaining time. A heartbeat is printed
-during the compiled rollout without inventing an unavailable step percentage.
-Reports and complete console logs are written to:
+The schema-version-2 report includes successes and rewards by seed, aggregate
+success rate, a 95% Wilson confidence interval, worst-seed success, and one
+record for every episode. Each record contains its seed, environment index,
+initial cube position, outcome, reward, and episode length. The default
+acceptance rule is aggregate success `>= 0.90` and worst-seed success `>= 0.85`.
+The terminal groups related fields in aligned, readable sections. Each
+completed seed reports its own and cumulative success, reward, elapsed time,
+and estimated remaining time. A heartbeat is printed during the compiled
+rollout without inventing an unavailable step percentage.
+
+After evaluation, the launcher automatically analyzes success against initial
+cube y position. The environment fixes x and only samples y in
+`[-0.05, 0.05]`, so a one-dimensional position plot is more informative than
+an artificial two-dimensional heatmap. Reports, analysis, and complete console
+logs are written to:
 
 ```text
 reproduction/artifacts/panda-independent-eval/
 ├── evaluation-<UTC timestamp>-<process>.json
+├── evaluation-<UTC timestamp>-<process>-analysis/
+│   ├── analysis-summary.json
+│   ├── episodes.csv
+│   ├── position-bins.csv
+│   ├── position-success-rate.png
+│   └── failure-cases.json
 └── console-<UTC timestamp>-<process>.log
 ```
+
+`episodes.csv` provides the denominator that was missing from the first
+evaluation, so success rate can be computed for each position bin rather than
+inferring difficulty from failures alone. `failure-cases.json` retains the seed
+and environment index needed to identify each failed rollout under the same
+evaluation batch configuration.
 
 The completed 2026-08-03 evaluation of fine-tune step 10,076,160 passed:
 990/1,024 episodes succeeded (`96.68%`), the 95% Wilson interval was
@@ -218,6 +237,16 @@ The completed 2026-08-03 evaluation of fine-tune step 10,076,160 passed:
 machine-readable record is committed at
 `reproduction/results/linux-independent-evaluation.json`; the full runtime
 report and console log remain in the ignored artifact directory.
+
+That first report used schema version 1 and recorded failure positions only.
+The schema-version-2 repeat evaluated the same checkpoint over another 1,024
+episodes and achieved 988/1,024 (`96.48%`). It found 265/290 success (`91.38%`)
+for `y < -0.02`, compared with 723/734 (`98.50%`) elsewhere. The weakest bin,
+`[-0.03, -0.02)`, achieved 67/76 (`88.16%`). A two-sided Fisher exact test for
+the broader left region versus the remainder gives `p = 2.17e-7`, supporting a
+relative spatial weakness while leaving the aggregate acceptance unchanged.
+The curated evidence is in
+`reproduction/results/linux-position-stratified-analysis.json`.
 
 To evaluate a particular checkpoint or reduce memory use:
 
