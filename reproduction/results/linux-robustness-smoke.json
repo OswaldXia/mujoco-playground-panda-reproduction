@@ -1,0 +1,40 @@
+{
+  "date": "2026-08-03",
+  "environment": "PandaPickCubeCartesian",
+  "experiment": "targeted left-y robustness smoke",
+  "artifact_kind": "panda-vision-robustness-smoke",
+  "effective_timesteps": 102400,
+  "evaluations": [
+    {
+      "step": 0,
+      "mean_reward": 9.512020111083984,
+      "success_rate": 0.9375
+    },
+    {
+      "step": 51200,
+      "mean_reward": 9.172094345092773,
+      "success_rate": 0.9375
+    },
+    {
+      "step": 102400,
+      "mean_reward": 9.087127685546875,
+      "success_rate": 0.90625
+    }
+  ],
+  "assessment": {
+    "pipeline_passed": true,
+    "checks": [
+      "restored-policy step-zero evaluation produced converged-level metrics",
+      "targeted training updates completed",
+      "all three planned evaluation points were recorded",
+      "TensorBoard summary was generated in the isolated smoke artifact tree"
+    ],
+    "performance_claim": "No robustness-improvement claim is made from the 100k smoke run.",
+    "observed_change": "Success changed from 60/64 to 58/64; this two-episode difference is diagnostic only."
+  },
+  "source": {
+    "filename": "evaluation-summary.json",
+    "sha256": "7b2d8556d1d38b2e51a1c1d2f46558f10cfa85f5877f0acdf8ee22688c728dbc",
+    "server_source_record": "reproduction/artifacts/panda-vision-robustness-smoke/robustness-source.json"
+  }
+}

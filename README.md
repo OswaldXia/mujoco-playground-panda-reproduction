@@ -69,6 +69,7 @@ profile on a MacBook Air with an Apple M1 and 16 GB of memory.
 | Best-checkpoint fine-tuning | Completed; final success 62/64 (96.875%) |
 | Independent held-out evaluation | Passed; 990/1,024 (96.68%), worst seed 95.70% |
 | Position-stratified evaluation | Passed overall; identified a significant left-side weakness |
+| Targeted robustness 100k smoke | Passed; checkpoint restore, updates, and 3 evaluations completed |
 
 Machine-readable evidence is committed in
 [`macos-state-smoke.json`](reproduction/results/macos-state-smoke.json) and
@@ -76,6 +77,8 @@ Machine-readable evidence is committed in
 [`linux-independent-evaluation.json`](reproduction/results/linux-independent-evaluation.json).
 The follow-up spatial analysis is in
 [`linux-position-stratified-analysis.json`](reproduction/results/linux-position-stratified-analysis.json).
+The targeted-training pipeline check is in
+[`linux-robustness-smoke.json`](reproduction/results/linux-robustness-smoke.json).
 
 The final deterministic held-out evaluation used four seeds and 256 episodes
 per seed. It succeeded in 990 of 1,024 episodes (`96.68%`), with a 95% Wilson

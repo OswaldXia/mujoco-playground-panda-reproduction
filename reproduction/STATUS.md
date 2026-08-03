@@ -25,6 +25,7 @@
 - [x] Training evaluation target (`>= 0.9`) reached
 - [x] Independent held-out multi-seed evaluation completed
 - [x] Position-stratified failure analysis completed
+- [x] Targeted robustness GPU smoke completed
 - [ ] Targeted robustness experiment completed
 
 ## macOS state-smoke result (2026-08-02)
@@ -161,7 +162,12 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Tool validation: ten local tests pass, including exact preservation of the
   upstream default RNG path, mixture support, interval inference, and Fisher
   comparison logic
-- Status: ready for the Linux NVIDIA training run; no result recorded yet
+- GPU smoke result: completed 102,400 effective steps with evaluations at step
+  0, 51,200, and 102,400; success was `0.9375`, `0.9375`, and `0.90625`
+- Smoke assessment: pipeline passed. The final two-episode difference from the
+  initial 64-episode evaluation is too small to support a robustness conclusion.
+- Evidence: `reproduction/results/linux-robustness-smoke.json`
+- Status: ready for the formal 3M-step Linux NVIDIA training run
 
 ## Known hardware boundary
 

@@ -277,6 +277,14 @@ Its outputs remain under
 formal experiment. After it completes, run one controlled fine-tune from the
 converged step-10,076,160 checkpoint:
 
+The completed smoke reached effective step 102,400 and recorded success rates
+of `0.9375`, `0.9375`, and `0.90625` at its three evaluations. This passes the
+pipeline gate: restored-policy evaluation, targeted updates, TensorBoard data,
+and final outputs all completed. The two-episode success change is not treated
+as evidence for or against robustness; that claim requires the full regression
+suite. Compact evidence is committed at
+`reproduction/results/linux-robustness-smoke.json`.
+
 ```bash
 ./reproduction/train_panda_gpu.sh robustness
 ```
