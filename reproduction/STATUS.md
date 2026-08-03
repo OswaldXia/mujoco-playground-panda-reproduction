@@ -188,7 +188,8 @@ The launcher now distinguishes the guarded exact `official` mode from the
 
 ## Trajectory-level failure classification
 
-- Implementation branch: `experiment/left-y-robustness`
+- Implementation branch: `analysis/guide-free-grasp-diagnostics`, branched
+  from the completed left-y experiment at `6c7aad9`
 - Scope: evaluation correctness and observability; no policy, reward,
   checkpoint, or training hyperparameter changes
 - Schema-version-3 result: left-side 963/1,024 (`94.04%`); 52 of 61 failures

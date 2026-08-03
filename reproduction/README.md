@@ -291,7 +291,9 @@ combined.
 Run the focused collection on the Linux NVIDIA server with:
 
 ```bash
-git pull
+git fetch origin
+git switch analysis/guide-free-grasp-diagnostics
+git pull --ff-only
 ./reproduction/evaluate_panda_failure_modes_gpu.sh
 ```
 
