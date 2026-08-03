@@ -151,10 +151,10 @@ if [[ "$RUN_KIND" == "finetune" ]]; then
   PANDA_FINETUNE_SELECTION="$ARTIFACT_DIR/finetune-source.json"
   if [[ -n "${PANDA_FINETUNE_CHECKPOINT:-}" ]]; then
     PANDA_RESTORE_CHECKPOINT="$PANDA_FINETUNE_CHECKPOINT"
-    if [[ ! -f "$PANDA_RESTORE_CHECKPOINT/ppo_network_config.json" ]]; then
+    if [[ ! -f "$PANDA_RESTORE_CHECKPOINT/ppo_network_config.json" && ! -f "$PANDA_RESTORE_CHECKPOINT/config.json" ]]; then
       echo "The requested fine-tune checkpoint is not an exact checkpoint directory:"
       echo "  $PANDA_RESTORE_CHECKPOINT"
-      echo "Expected ppo_network_config.json inside that directory."
+      echo "Expected ppo_network_config.json or config.json inside that directory."
       exit 1
     fi
     "$PYTHON" -c 'import json, pathlib, sys; path = pathlib.Path(sys.argv[1]).resolve(); output = pathlib.Path(sys.argv[2]); output.write_text(json.dumps({"checkpoint": str(path), "selection": "explicit override"}, indent=2) + "\n", encoding="utf-8")' \

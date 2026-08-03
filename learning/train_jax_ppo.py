@@ -502,7 +502,10 @@ def main(argv):
     # Convert to absolute path
     ckpt_path = epath.Path(_LOAD_CHECKPOINT_PATH.value).resolve()
     if ckpt_path.is_dir():
-      if (ckpt_path / "ppo_network_config.json").exists():
+      if any(
+          (ckpt_path / name).exists()
+          for name in ("ppo_network_config.json", "config.json")
+      ):
         restore_checkpoint_path = ckpt_path
         print(f"[trainer] Restoring exact checkpoint: {restore_checkpoint_path}")
       else:

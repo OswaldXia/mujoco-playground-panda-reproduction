@@ -43,7 +43,10 @@ def find_checkpoint(summary: dict, runs_dir: Path, step: int) -> Path:
           path.is_dir()
           and path.name.isdigit()
           and int(path.name) == step
-          and (path / "ppo_network_config.json").is_file()
+          and any(
+              (path / name).is_file()
+              for name in ("ppo_network_config.json", "config.json")
+          )
       )
   ]
   if not candidates:

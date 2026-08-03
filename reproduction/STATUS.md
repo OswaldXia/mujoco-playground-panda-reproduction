@@ -21,8 +21,9 @@
 - [x] Adaptive 10M-step vision training completed
 - [x] Fixed-seed success evaluation completed
 - [x] Initial full-run results documented
-- [ ] Best-checkpoint fine-tuning completed
-- [ ] Success target (`>= 0.8`) reached
+- [x] Best-checkpoint fine-tuning completed
+- [x] Training evaluation target (`>= 0.9`) reached
+- [ ] Independent held-out multi-seed evaluation completed
 
 ## macOS state-smoke result (2026-08-02)
 
@@ -82,6 +83,20 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Next step: run `./reproduction/train_panda_gpu.sh finetune`, which selects
   the step-5,017,600 checkpoint and writes new artifacts separately
 - Runtime artifacts remain local and are not committed to Git
+
+## Linux NVIDIA fine-tune run (2026-08-03)
+
+- Source checkpoint: adaptive full step 5,017,600
+- Additional workload: 10,076,160 effective timesteps
+- Final evaluation: mean reward `9.594509`, success `0.96875` (62/64)
+- Late evaluations: `0.828125` at step 6,297,600, `0.953125` at step
+  8,816,640, and `0.96875` at the final step
+- Video review: rollouts 0, 2, and 3 visibly reach the lift target; rollout 1
+  exposes a remaining hard initial condition
+- Assessment: the fine-tuned policy meets the training-evaluation target;
+  independent held-out evaluation is still required before the final claim
+- Next step: back up the artifact tree, then evaluate four held-out seeds with
+  `reproduction/evaluate_panda_gpu.sh`
 
 ## Known hardware boundary
 

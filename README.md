@@ -65,8 +65,9 @@ profile on a MacBook Air with an Apple M1 and 16 GB of memory.
 | Minimal 128-step Brax PPO update | Passed |
 | Linux NVIDIA 100k visual smoke | Passed; artifacts in `reproduction/artifacts/panda-vision-smoke/` |
 | Adaptive 10M visual PPO run | Completed on RTX 2080 Ti; best success 3/64 |
-| Four deterministic replay videos | Completed; no visible successful lift |
-| Best-checkpoint fine-tuning | Ready to run |
+| Initial full-run replay videos | Completed; no visible successful lift |
+| Best-checkpoint fine-tuning | Completed; final success 62/64 (96.875%) |
+| Independent held-out evaluation | Tool ready; server run pending |
 
 Machine-readable evidence is committed in
 [`macos-state-smoke.json`](reproduction/results/macos-state-smoke.json) and
@@ -116,6 +117,10 @@ debugging—not for converged visual PPO training.
 ./reproduction/train_panda_gpu.sh full
 # If the full run has not converged:
 ./reproduction/train_panda_gpu.sh finetune
+# Freeze the complete result and create a SHA-256 checksum:
+./reproduction/backup_panda_run.sh finetune
+# Evaluate 4 held-out seeds x 256 episodes (no training):
+./reproduction/evaluate_panda_gpu.sh
 # Optional exact upstream parallelism on a high-memory GPU:
 ./reproduction/train_panda_gpu.sh official
 ```
@@ -156,6 +161,11 @@ another 10M steps at learning rate `0.0005`. It writes new artifacts under
 `reproduction/artifacts/panda-vision-finetune/`. For the completed run, the
 correct source is step 5,017,600 rather than the weaker final checkpoint.
 
+The completed fine-tune run reached `0.96875` success (62/64) and mean reward
+`9.594509` at step 10,076,160. Use `backup_panda_run.sh` to preserve the full
+ignored artifact tree, then use `evaluate_panda_gpu.sh` for a deterministic
+1,024-episode held-out evaluation before recording the final project result.
+
 ## Repository layout
 
 ```text
@@ -165,6 +175,9 @@ reproduction/
 ├── vision_backend_probe.py      # 64 x 64 RGB reset/step capability test
 ├── setup_gpu.sh                 # Linux CUDA environment and preflight
 ├── train_panda_gpu.sh           # Smoke, adaptive, fine-tune, and exact profiles
+├── backup_panda_run.sh          # Non-overwriting archive plus SHA-256
+├── evaluate_panda_gpu.sh        # Linux GPU independent-evaluation launcher
+├── evaluate_panda_checkpoint.py # Multi-seed metrics and confidence interval
 ├── select_best_checkpoint.py    # Success-first checkpoint selection
 ├── summarize_tensorboard.py     # Reward and success metric extraction
 ├── results/                     # Committed machine-readable evidence

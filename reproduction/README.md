@@ -157,10 +157,70 @@ PANDA_FINETUNE_CHECKPOINT="$PWD/reproduction/artifacts/panda-vision-full/runs/<r
 For an 11 GiB RTX 2080 Ti, the default fine-tune profile remains 512 train
 environments, 64 evaluation environments, and batch size 128. A reasonable
 acceptance target is at least `0.8` fixed-seed evaluation success, preferably
-`0.9`; the four rollout videos should visibly show grasp, lift, and stable hold.
+`0.9`; rollout videos should visibly show grasp and lift to the target before
+the environment's immediate success reset.
 
-All training modes use seed 1, write TensorBoard scalars, and extract the final mean
-episode reward and `reward/success` metric to `evaluation-summary.json`.
+## Back up a completed run
+
+Create a verified archive on the Linux server before any further experiment:
+
+```bash
+./reproduction/backup_panda_run.sh finetune
+```
+
+The script validates the manifest, console log, evaluation summary, latest run,
+and latest checkpoint. It then archives the complete
+`panda-vision-finetune` artifact tree without overwriting an existing file,
+reopens the archive to validate it, and writes a SHA-256 checksum. The default
+destination is:
+
+```text
+~/panda-reproduction-archives/
+├── panda-vision-finetune-<UTC timestamp>.tar.gz
+└── panda-vision-finetune-<UTC timestamp>.tar.gz.sha256
+```
+
+Select another destination with `PANDA_BACKUP_DIR=/path/to/backups`. The
+archive remains outside Git because it contains large checkpoints and videos.
+
+## Independent held-out evaluation
+
+Run this after backing up the converged fine-tune result:
+
+```bash
+./reproduction/evaluate_panda_gpu.sh
+```
+
+With no arguments, the launcher selects the newest numeric checkpoint from the
+latest fine-tune run. It evaluates a deterministic policy on four held-out
+seeds (`101,202,303,404`), with 256 independent episodes per seed and 1,024
+episodes in total. This is inference-only: it never updates or overwrites the
+policy.
+
+The report includes successes and rewards by seed, aggregate success rate, a
+95% Wilson confidence interval, worst-seed success, and initial cube positions
+for failures. The default acceptance rule is aggregate success `>= 0.90` and
+worst-seed success `>= 0.85`. Reports are written to:
+
+```text
+reproduction/artifacts/panda-independent-eval/evaluation-<UTC timestamp>.json
+```
+
+To evaluate a particular checkpoint or reduce memory use:
+
+```bash
+./reproduction/evaluate_panda_gpu.sh \
+  --checkpoint /absolute/path/to/checkpoints/000010076160 \
+  --num-envs 128
+```
+
+The evaluation requires the Linux NVIDIA server. On an 11 GiB RTX 2080 Ti,
+start with the default 256 environments; if it reports GPU out-of-memory,
+retry with 128. Each seed is evaluated sequentially, and the command prints a
+heartbeat during the first JIT compilation.
+
+All training modes use seed 1, write TensorBoard scalars, and extract the final
+mean episode reward and `reward/success` metric to `evaluation-summary.json`.
 The console prints five named phases, a compact hardware/training plan, reward
 and ETA at evaluation boundaries, plus a heartbeat every 30 seconds during
 long JIT or training intervals. Complete configuration dumps and cached Warp
