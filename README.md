@@ -186,10 +186,12 @@ reproduction/
 ├── train_panda_gpu.sh           # Smoke, adaptive, fine-tune, and exact profiles
 ├── backup_panda_run.sh          # Non-overwriting archive plus SHA-256
 ├── evaluate_panda_gpu.sh        # Linux GPU independent-evaluation launcher
-├── evaluate_panda_checkpoint.py # Multi-seed metrics and confidence interval
+├── evaluate_panda_checkpoint.py # Multi-seed metrics and per-episode records
+├── analyze_panda_evaluation.py  # Position bins, plot, CSV, and failure cases
 ├── select_best_checkpoint.py    # Success-first checkpoint selection
 ├── summarize_tensorboard.py     # Reward and success metric extraction
 ├── results/                     # Committed machine-readable evidence
+├── tests/                       # Reproduction-tool unit tests
 ├── README.md                    # Detailed execution guide
 └── STATUS.md                    # Completed and pending checklist
 ```

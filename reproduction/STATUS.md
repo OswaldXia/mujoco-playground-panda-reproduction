@@ -118,6 +118,20 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Assessment: the pinned simulation reproduction is complete and robust across
   the selected held-out seeds. Real-robot performance remains outside scope.
 
+## Position-stratified failure analysis
+
+- Tooling status: implemented on branch `analysis/failure-map`
+- New evaluation schema: records the initial position, result, reward, and
+  episode length for every rollout while preserving aggregate and per-seed data
+- Automatic outputs: complete episode CSV, ten y-position bins with Wilson
+  intervals, success-rate plot, analysis summary, and reproducible failure list
+- Validation: five unit tests cover boundary assignment, empty bins, aggregate
+  consistency, invalid ranges, and actual CSV/PNG generation
+- Important limitation: the existing 2026-08-03 report contains only failure
+  positions and cannot supply the success denominator retrospectively
+- Next step: rerun `./reproduction/evaluate_panda_gpu.sh` on the same checkpoint;
+  this is inference-only and does not require additional training
+
 ## Known hardware boundary
 
 Apple Silicon is used for source inspection, state-environment debugging, and
