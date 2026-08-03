@@ -248,6 +248,43 @@ relative spatial weakness while leaving the aggregate acceptance unchanged.
 The curated evidence is in
 `reproduction/results/linux-position-stratified-analysis.json`.
 
+### Trajectory-level failure classification
+
+Schema version 3 adds stage-level diagnostics to every episode without changing
+the policy, checkpoint, reward, or training configuration. It records approach,
+the environment's official 12 mm `reached_box` condition, close commands,
+lifting, dropping, target-height error, hand-capsule collisions, and the first
+step of each key event. A failure is assigned to exactly one class:
+
+- `out_of_bounds_or_invalid`
+- `never_approached`
+- `approached_not_reached`
+- `reached_no_lift`
+- `lifted_then_dropped`
+- `lifted_timeout`
+
+`ever_hand_box_collision` specifically means collision with the hand capsule;
+it is retained as a diagnostic but is not treated as successful grasp contact.
+The evaluator prints class counts at completion, adds all trajectory fields to
+`episodes.csv`, and writes a standalone `failure-classification.json` in the
+analysis directory.
+
+Run the focused collection on the Linux NVIDIA server with:
+
+```bash
+git pull
+./reproduction/evaluate_panda_failure_modes_gpu.sh
+```
+
+The command automatically selects the completed robustness checkpoint and
+evaluates 1,024 new episodes over the left-side range `[-0.05, -0.02)`, which
+was the only missed gate. Results are stored under
+`reproduction/artifacts/panda-failure-modes/<timestamp>/`. This must be a new
+rollout: schema-version-2 reports contain final outcomes and initial positions,
+but not the intermediate states needed to reconstruct a failure trajectory.
+Use the dominant class to choose one controlled intervention; do not combine
+multiple reward, sampling, and policy changes in the first follow-up run.
+
 To evaluate a particular checkpoint or reduce memory use:
 
 ```bash

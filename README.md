@@ -215,8 +215,10 @@ reproduction/
 ├── backup_panda_run.sh          # Non-overwriting archive plus SHA-256
 ├── evaluate_panda_gpu.sh        # Linux GPU independent-evaluation launcher
 ├── evaluate_panda_robustness_gpu.sh # Three-distribution regression suite
+├── evaluate_panda_failure_modes_gpu.sh # Left-side trajectory diagnostics
 ├── evaluate_panda_checkpoint.py # Multi-seed metrics and per-episode records
 ├── analyze_panda_evaluation.py  # Position bins, plot, CSV, and failure cases
+├── panda_failure_classification.py # Mutually exclusive failure taxonomy
 ├── summarize_robustness_evaluation.py # Baseline comparison and decision
 ├── select_best_checkpoint.py    # Success-first checkpoint selection
 ├── summarize_tensorboard.py     # Reward and success metric extraction

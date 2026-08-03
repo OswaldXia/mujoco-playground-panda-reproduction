@@ -27,6 +27,8 @@
 - [x] Position-stratified failure analysis completed
 - [x] Targeted robustness GPU smoke completed
 - [x] Targeted robustness experiment completed
+- [x] Trajectory-level failure-classification tooling implemented
+- [ ] Left-side trajectory dataset collected on the Linux NVIDIA server
 - [ ] All targeted robustness acceptance criteria passed
 
 ## macOS state-smoke result (2026-08-02)
@@ -160,9 +162,9 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Acceptance: preserve at least 95% aggregate on the original distribution,
   reach at least 95% on the left region, and at least 93% on the hard bin, with
   separate worst-seed safeguards
-- Tool validation: ten local tests pass, including exact preservation of the
-  upstream default RNG path, mixture support, interval inference, and Fisher
-  comparison logic
+- Tool validation: fourteen local tests pass, including exact preservation of
+  the upstream default RNG path, mixture support, interval inference, Fisher
+  comparison logic, and mutually exclusive failure classification
 - GPU smoke result: completed 102,400 effective steps with evaluations at step
   0, 51,200, and 102,400; success was `0.9375`, `0.9375`, and `0.90625`
 - Smoke assessment: pipeline passed. The final two-episode difference from the
@@ -178,6 +180,19 @@ The launcher now distinguishes the guarded exact `official` mode from the
   six criteria passed; the threshold is not changed after observing the result.
 - Evidence: `reproduction/results/linux-targeted-robustness-evaluation.json`
 - Status: experiment complete; keep the branch separate from `main`
+
+## Trajectory-level failure classification
+
+- Implementation branch: `experiment/left-y-robustness`
+- Scope: evaluation-only observability; no policy, reward, checkpoint, or
+  training hyperparameter changes
+- Report schema: version 3, with per-episode approach, reached-box, close,
+  lift, drop, target-height, collision, and first-event-step diagnostics
+- Failure classes: invalid/out-of-bounds, never approached, approached but not
+  reached, reached but not lifted, lifted then dropped, and lifted timeout
+- Focused runner: `./reproduction/evaluate_panda_failure_modes_gpu.sh`
+- Next decision: collect 1,024 left-side episodes, identify the dominant class,
+  then choose one class-specific intervention before any new fine-tuning run
 
 ## Known hardware boundary
 

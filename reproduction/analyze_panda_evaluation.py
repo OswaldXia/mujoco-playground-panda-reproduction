@@ -43,7 +43,7 @@ def load_episode_records(report_path: Path) -> tuple[dict[str, Any], list[dict]]
   if not isinstance(records, list) or not records:
     raise ValueError(
         "Report does not contain evaluation.episode_records. Generate it "
-        "with schema version 2 of evaluate_panda_checkpoint.py."
+        "with schema version 2 or later of evaluate_panda_checkpoint.py."
     )
   required = {
       "episode_id",
@@ -127,12 +127,22 @@ def write_episode_csv(path: Path, records: list[dict]) -> None:
       "success_metric",
       "reward",
       "episode_length",
+      "failure_class",
+      "min_gripper_box_distance",
+      "min_target_height_error",
+      "max_box_height",
+      "ever_reached_box",
+      "ever_lifted",
+      "lifted_then_dropped",
+      "first_reached_box_step",
+      "first_lift_step",
   )
   with path.open("w", encoding="utf-8", newline="") as file:
     writer = csv.DictWriter(file, fieldnames=fields)
     writer.writeheader()
     for record in records:
       position = record["initial_box_position"]
+      trajectory = record.get("trajectory", {})
       writer.writerow({
           "episode_id": record["episode_id"],
           "seed": record["seed"],
@@ -144,7 +154,43 @@ def write_episode_csv(path: Path, records: list[dict]) -> None:
           "success_metric": record.get("success_metric", ""),
           "reward": record["reward"],
           "episode_length": record["episode_length"],
+          "failure_class": record.get("failure_class") or "",
+          "min_gripper_box_distance": trajectory.get(
+              "min_gripper_box_distance", ""
+          ),
+          "min_target_height_error": trajectory.get(
+              "min_target_height_error", ""
+          ),
+          "max_box_height": trajectory.get("max_box_height", ""),
+          "ever_reached_box": trajectory.get("ever_reached_box", ""),
+          "ever_lifted": trajectory.get("ever_lifted", ""),
+          "lifted_then_dropped": trajectory.get(
+              "lifted_then_dropped", ""
+          ),
+          "first_reached_box_step": trajectory.get(
+              "first_reached_box_step", ""
+          ),
+          "first_lift_step": trajectory.get("first_lift_step", ""),
       })
+
+
+def build_failure_classification_artifact(
+    report: dict[str, Any], failures: list[dict]
+) -> dict[str, Any] | None:
+  diagnostics = report["evaluation"].get("trajectory_diagnostics")
+  if not isinstance(diagnostics, dict):
+    return None
+  classification = diagnostics.get("failure_classification")
+  if not isinstance(classification, dict):
+    return None
+  return {
+      "schema_version": 1,
+      "source_report": report.get("generated_at_utc"),
+      "thresholds_meters": diagnostics.get("thresholds_meters", {}),
+      "notes": diagnostics.get("notes", {}),
+      "summary": classification,
+      "failure_cases": failures,
+  }
 
 
 def write_bin_csv(path: Path, bins: list[dict]) -> None:
@@ -272,6 +318,7 @@ def main() -> None:
   episode_csv = output_dir / "episodes.csv"
   bin_csv = output_dir / "position-bins.csv"
   failure_json = output_dir / "failure-cases.json"
+  classification_json = output_dir / "failure-classification.json"
   plot_path = output_dir / "position-success-rate.png"
   summary_path = output_dir / "analysis-summary.json"
   write_episode_csv(episode_csv, records)
@@ -280,6 +327,15 @@ def main() -> None:
       json.dumps({"count": len(failures), "cases": failures}, indent=2) + "\n",
       encoding="utf-8",
   )
+  classification_artifact = build_failure_classification_artifact(
+      report, failures
+  )
+  if classification_artifact is not None:
+    classification_artifact["source_report"] = str(report_path)
+    classification_json.write_text(
+        json.dumps(classification_artifact, indent=2) + "\n",
+        encoding="utf-8",
+    )
   target_success_rate = report["evaluation"].get("acceptance", {}).get(
       "target_success_rate", 0.90
   )
@@ -308,6 +364,11 @@ def main() -> None:
           "position_plot": plot_path.name,
       },
   }
+  if classification_artifact is not None:
+    summary["failure_classification"] = classification_artifact["summary"]
+    summary["artifacts"]["failure_classification_json"] = (
+        classification_json.name
+    )
   summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
 
   print("\nPosition-stratified analysis complete")
@@ -323,6 +384,11 @@ def main() -> None:
   print(f"  {'Plot':<22}{plot_path}")
   print(f"  {'Episode table':<22}{episode_csv}")
   print(f"  {'Failure cases':<22}{failure_json}")
+  if classification_artifact is not None:
+    print("\n  Failure-class counts")
+    for name, count in classification_artifact["summary"]["counts"].items():
+      print(f"    {name:<32}{count:>5}")
+    print(f"  {'Classification':<22}{classification_json}")
   print(f"  {'Analysis summary':<22}{summary_path}")
 
 

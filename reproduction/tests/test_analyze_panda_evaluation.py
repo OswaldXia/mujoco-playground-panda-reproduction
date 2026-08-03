@@ -101,6 +101,33 @@ class AnalyzePandaEvaluationTest(unittest.TestCase):
       with self.assertRaisesRegex(ValueError, "aggregate.episodes"):
         MODULE.load_episode_records(report_path)
 
+  def test_trajectory_classification_is_exported(self):
+    report = {
+        "generated_at_utc": "2026-08-03T00:00:00+00:00",
+        "evaluation": {
+            "trajectory_diagnostics": {
+                "thresholds_meters": {"approach_distance": 0.03},
+                "notes": {"ever_hand_box_collision": "not grasp contact"},
+                "failure_classification": {
+                    "total_failures": 1,
+                    "counts": {"reached_no_lift": 1},
+                },
+            }
+        },
+    }
+    failures = [{
+        "episode_id": "101:0000",
+        "success": False,
+        "failure_class": "reached_no_lift",
+        "trajectory": {"ever_reached_box": True, "ever_lifted": False},
+    }]
+    artifact = MODULE.build_failure_classification_artifact(report, failures)
+    self.assertIsNotNone(artifact)
+    self.assertEqual(artifact["summary"]["total_failures"], 1)
+    self.assertEqual(
+        artifact["failure_cases"][0]["failure_class"], "reached_no_lift"
+    )
+
 
 if __name__ == "__main__":
   unittest.main()

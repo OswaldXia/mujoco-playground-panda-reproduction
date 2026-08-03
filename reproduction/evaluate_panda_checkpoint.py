@@ -26,14 +26,22 @@ from brax.training import networks as brax_networks  # noqa: E402
 from brax.training.agents.ppo import networks as ppo_networks  # noqa: E402
 from brax.training.agents.ppo import networks_vision  # noqa: E402
 import jax  # noqa: E402
+import jax.numpy as jnp  # noqa: E402
 from ml_collections import config_dict  # noqa: E402
 import numpy as np  # noqa: E402
 
 from mujoco_playground import registry  # noqa: E402
 from mujoco_playground import wrapper  # noqa: E402
+from panda_failure_classification import (  # noqa: E402
+    classify_failure,
+    summarize_failure_classes,
+)
 
 
 ENV_NAME = "PandaPickCubeCartesian"
+APPROACH_DISTANCE_METERS = 0.03
+LIFT_HEIGHT_METERS = 0.05
+DROP_HEIGHT_METERS = 0.04
 
 
 class Heartbeat:
@@ -368,24 +376,180 @@ def main() -> None:
 
   reset_fn = jax.jit(eval_env.reset)
 
+  object_body_id = int(
+      base_env.unwrapped._obj_body  # pylint: disable=protected-access
+  )
+  gripper_site_id = int(
+      base_env.unwrapped._gripper_site  # pylint: disable=protected-access
+  )
+
+  def observe_trajectory(state):
+    box_position = state.data.xpos[:, object_body_id]
+    gripper_position = state.data.site_xpos[:, gripper_site_id]
+    return {
+        "box_position": box_position,
+        "gripper_box_distance": jnp.linalg.norm(
+            box_position - gripper_position, axis=-1
+        ),
+        "target_height_error": jnp.abs(
+            box_position[:, 2] - state.info["target_pos"][:, 2]
+        ),
+    }
+
   @jax.jit
   def rollout(state, policy_params, key):
     policy = make_policy(policy_params, deterministic=True)
 
-    def step(carry, _):
-      current_state, current_key = carry
+    initial = observe_trajectory(state)
+    batch_size = state.reward.shape[0]
+    missing_step = jnp.full((batch_size,), -1, dtype=jnp.int32)
+    trajectory = {
+        "active": jnp.ones((batch_size,), dtype=bool),
+        "min_gripper_box_distance": initial["gripper_box_distance"],
+        "min_target_height_error": initial["target_height_error"],
+        "max_box_height": initial["box_position"][:, 2],
+        "last_active_box_position": initial["box_position"],
+        "ever_approached": initial["gripper_box_distance"]
+        <= APPROACH_DISTANCE_METERS,
+        "ever_reached_box": state.info["reached_box"] > 0.5,
+        "ever_lifted": initial["box_position"][:, 2] > LIFT_HEIGHT_METERS,
+        "lifted_then_dropped": jnp.zeros((batch_size,), dtype=bool),
+        "ever_close_command": jnp.zeros((batch_size,), dtype=bool),
+        "ever_hand_box_collision": jnp.zeros((batch_size,), dtype=bool),
+        "ever_out_of_bounds_or_invalid": jnp.zeros(
+            (batch_size,), dtype=bool
+        ),
+        "first_approach_step": missing_step,
+        "first_reached_box_step": missing_step,
+        "first_close_command_step": missing_step,
+        "first_lift_step": missing_step,
+        "first_success_step": missing_step,
+    }
+
+    def first_occurrence(previous, occurred, step_number):
+      return jnp.where(
+          (previous < 0) & occurred,
+          jnp.asarray(step_number, dtype=jnp.int32),
+          previous,
+      )
+
+    def step(carry, step_index):
+      current_state, current_key, current_trajectory = carry
       current_key, action_key = jax.random.split(current_key)
       action, _ = policy(current_state.obs, action_key)
       next_state = eval_env.step(current_state, action)
-      return (next_state, current_key), None
+      active = current_trajectory["active"]
+      active_after = active & ~(next_state.done > 0.5)
+      observed = observe_trajectory(next_state)
 
-    (final_state, _), _ = jax.lax.scan(
+      # AutoReset replaces terminal data with the initial state. Only consume
+      # next-state positions for episodes that remain active. Terminal stage
+      # flags are read from metrics/info, which retain the true final step.
+      distance = jnp.where(
+          active_after,
+          observed["gripper_box_distance"],
+          current_trajectory["min_gripper_box_distance"],
+      )
+      target_error = jnp.where(
+          active_after,
+          observed["target_height_error"],
+          current_trajectory["min_target_height_error"],
+      )
+      box_height = jnp.where(
+          active_after,
+          observed["box_position"][:, 2],
+          current_trajectory["max_box_height"],
+      )
+      approached_now = active & (distance <= APPROACH_DISTANCE_METERS)
+      reached_now = active & (next_state.info["reached_box"] > 0.5)
+      lifted_now = active & (next_state.metrics["reward/lifted"] > 0.0)
+      close_now = active & (action[:, 2] < 0.0)
+      collision_now = active & (
+          next_state.metrics["reward/no_box_collision"] < 0.5
+      )
+      invalid_now = active & (
+          (next_state.metrics["out_of_bounds"] > 0.5)
+          | jnp.isnan(next_state.reward)
+      )
+      success_now = active & (next_state.metrics["reward/success"] > 0.5)
+      ever_lifted = current_trajectory["ever_lifted"] | lifted_now
+      dropped_now = (
+          active_after
+          & ever_lifted
+          & (observed["box_position"][:, 2] <= DROP_HEIGHT_METERS)
+      )
+      step_number = step_index + 1
+
+      updated = {
+          "active": active_after,
+          "min_gripper_box_distance": jnp.minimum(
+              current_trajectory["min_gripper_box_distance"], distance
+          ),
+          "min_target_height_error": jnp.minimum(
+              current_trajectory["min_target_height_error"], target_error
+          ),
+          "max_box_height": jnp.maximum(
+              current_trajectory["max_box_height"], box_height
+          ),
+          "last_active_box_position": jnp.where(
+              active_after[:, None],
+              observed["box_position"],
+              current_trajectory["last_active_box_position"],
+          ),
+          "ever_approached": (
+              current_trajectory["ever_approached"] | approached_now
+          ),
+          "ever_reached_box": (
+              current_trajectory["ever_reached_box"] | reached_now
+          ),
+          "ever_lifted": ever_lifted,
+          "lifted_then_dropped": (
+              current_trajectory["lifted_then_dropped"] | dropped_now
+          ),
+          "ever_close_command": (
+              current_trajectory["ever_close_command"] | close_now
+          ),
+          "ever_hand_box_collision": (
+              current_trajectory["ever_hand_box_collision"] | collision_now
+          ),
+          "ever_out_of_bounds_or_invalid": (
+              current_trajectory["ever_out_of_bounds_or_invalid"]
+              | invalid_now
+          ),
+          "first_approach_step": first_occurrence(
+              current_trajectory["first_approach_step"],
+              approached_now,
+              step_number,
+          ),
+          "first_reached_box_step": first_occurrence(
+              current_trajectory["first_reached_box_step"],
+              reached_now,
+              step_number,
+          ),
+          "first_close_command_step": first_occurrence(
+              current_trajectory["first_close_command_step"],
+              close_now,
+              step_number,
+          ),
+          "first_lift_step": first_occurrence(
+              current_trajectory["first_lift_step"],
+              lifted_now,
+              step_number,
+          ),
+          "first_success_step": first_occurrence(
+              current_trajectory["first_success_step"],
+              success_now,
+              step_number,
+          ),
+      }
+      return (next_state, current_key, updated), None
+
+    (final_state, _, final_trajectory), _ = jax.lax.scan(
         step,
-        (state, key),
-        None,
-        length=episode_length // env_config.action_repeat,
+        (state, key, trajectory),
+        jnp.arange(episode_length // env_config.action_repeat),
     )
-    return final_state
+    return final_state, final_trajectory
 
   print("\n[3/4] Held-out multi-seed evaluation", flush=True)
   per_seed: list[dict[str, Any]] = []
@@ -416,10 +580,11 @@ def main() -> None:
               :, object_qpos_address : object_qpos_address + 3
           ]
       )
-      final_state = rollout(initial_state, params, rollout_key)
+      final_state, trajectory = rollout(initial_state, params, rollout_key)
       eval_metrics = jax.tree.map(
           np.asarray, final_state.info["eval_metrics"]
       )
+      trajectory = jax.tree.map(np.asarray, trajectory)
 
     success_values = np.asarray(
         eval_metrics.episode_metrics["reward/success"]
@@ -432,6 +597,57 @@ def main() -> None:
     failure_positions = initial_box_positions[~success_mask]
 
     for environment_index in range(args.num_envs):
+      episode_trajectory = {
+          "min_gripper_box_distance": float(
+              trajectory["min_gripper_box_distance"][environment_index]
+          ),
+          "min_target_height_error": float(
+              trajectory["min_target_height_error"][environment_index]
+          ),
+          "max_box_height": float(
+              trajectory["max_box_height"][environment_index]
+          ),
+          "last_active_box_position": np.round(
+              trajectory["last_active_box_position"][environment_index], 6
+          ).tolist(),
+          "ever_approached": bool(
+              trajectory["ever_approached"][environment_index]
+          ),
+          "ever_reached_box": bool(
+              trajectory["ever_reached_box"][environment_index]
+          ),
+          "ever_lifted": bool(
+              trajectory["ever_lifted"][environment_index]
+          ),
+          "lifted_then_dropped": bool(
+              trajectory["lifted_then_dropped"][environment_index]
+          ),
+          "ever_close_command": bool(
+              trajectory["ever_close_command"][environment_index]
+          ),
+          "ever_hand_box_collision": bool(
+              trajectory["ever_hand_box_collision"][environment_index]
+          ),
+          "ever_out_of_bounds_or_invalid": bool(
+              trajectory["ever_out_of_bounds_or_invalid"][environment_index]
+          ),
+          "first_approach_step": int(
+              trajectory["first_approach_step"][environment_index]
+          ),
+          "first_reached_box_step": int(
+              trajectory["first_reached_box_step"][environment_index]
+          ),
+          "first_close_command_step": int(
+              trajectory["first_close_command_step"][environment_index]
+          ),
+          "first_lift_step": int(
+              trajectory["first_lift_step"][environment_index]
+          ),
+          "first_success_step": int(
+              trajectory["first_success_step"][environment_index]
+          ),
+      }
+      success = bool(success_mask[environment_index])
       episode_records.append({
           "episode_id": f"{seed}:{environment_index:04d}",
           "seed": seed,
@@ -439,10 +655,14 @@ def main() -> None:
           "initial_box_position": np.round(
               initial_box_positions[environment_index], 6
           ).tolist(),
-          "success": bool(success_mask[environment_index]),
+          "success": success,
           "success_metric": float(success_values[environment_index]),
           "reward": float(rewards[environment_index]),
           "episode_length": int(episode_lengths[environment_index]),
+          "failure_class": (
+              None if success else classify_failure(episode_trajectory)
+          ),
+          "trajectory": episode_trajectory,
       })
 
     seed_result = {
@@ -501,10 +721,11 @@ def main() -> None:
   )
   evaluation_duration = time.monotonic() - evaluation_started
   total_duration = time.monotonic() - run_started
+  failure_classification = summarize_failure_classes(episode_records)
 
   git_status = git_value(project_dir, "status", "--porcelain")
   report = {
-      "schema_version": 2,
+      "schema_version": 3,
       "generated_at_utc": datetime.datetime.now(datetime.UTC).isoformat(),
       "environment": ENV_NAME,
       "checkpoint": str(checkpoint_path),
@@ -520,6 +741,25 @@ def main() -> None:
           "duration_seconds": evaluation_duration,
           "per_seed": per_seed,
           "episode_records": episode_records,
+          "trajectory_diagnostics": {
+              "thresholds_meters": {
+                  "approach_distance": APPROACH_DISTANCE_METERS,
+                  "environment_reached_box_distance": 0.012,
+                  "lift_height": LIFT_HEIGHT_METERS,
+                  "drop_height": DROP_HEIGHT_METERS,
+              },
+              "notes": {
+                  "last_active_box_position": (
+                      "Last non-terminal position because AutoReset replaces "
+                      "terminal simulator data."
+                  ),
+                  "ever_hand_box_collision": (
+                      "Collision between the cube and hand capsule; this is "
+                      "not interpreted as a successful grasp contact."
+                  ),
+              },
+              "failure_classification": failure_classification,
+          },
           "aggregate": {
               "episodes": total,
               "successes": successes,
@@ -568,6 +808,9 @@ def main() -> None:
   print_item("Per-seed success", seed_summary)
   print_item("Mean reward", f"{np.mean(reward_array):.3f}")
   print_item("Recorded failures", total - successes)
+  print("\n  Failure classes", flush=True)
+  for name, count in failure_classification["counts"].items():
+    print(f"    {name:<32}{count:>5}", flush=True)
   print_item("Evaluation time", format_duration(evaluation_duration))
   print_item("Total time", format_duration(total_duration))
   print_item("Report", output_path)
