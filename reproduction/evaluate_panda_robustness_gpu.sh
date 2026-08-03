@@ -48,8 +48,12 @@ run_or_reuse() {
   local output="$1"
   shift
   if [[ -f "$output" ]]; then
-    "$PYTHON" -c 'import json, pathlib, sys; report = json.loads(pathlib.Path(sys.argv[1]).read_text()); assert report.get("schema_version", 0) >= 2; assert report["evaluation"]["aggregate"]["episodes"] == 1024; assert pathlib.Path(report["checkpoint"]).name == pathlib.Path(sys.argv[2]).name' \
-      "$output" "$CHECKPOINT"
+    if ! "$PYTHON" -c 'import json, pathlib, sys; report = json.loads(pathlib.Path(sys.argv[1]).read_text()); evaluation = report.get("evaluation", {}); assert report.get("schema_version", 0) >= 4; assert evaluation.get("guide_swap_probability") == 0.0; assert evaluation["aggregate"]["episodes"] == 1024; assert pathlib.Path(report["checkpoint"]).name == pathlib.Path(sys.argv[2]).name' \
+      "$output" "$CHECKPOINT"; then
+      echo "Existing report is not a schema-4 guide-free evaluation: $output"
+      echo "Start a new run instead of resuming legacy guide-assisted reports."
+      exit 1
+    fi
     printf "  %-22s%s\n" "Reuse report" "$output"
     "$PYTHON" reproduction/analyze_panda_evaluation.py \
       --report "$output" \

@@ -4,5 +4,7 @@
     <contact name="right_finger_pad_floor_found" geom1="right_finger_pad" geom2="floor" reduce="mindist" num="1" data="found"/>
     <contact name="hand_capsule_floor_found" geom1="hand_capsule" geom2="floor" reduce="mindist" num="1" data="found"/>
     <contact name="box_hand_found" geom1="box" geom2="hand_capsule" reduce="mindist" num="1" data="found"/>
+    <contact name="box_left_finger_pad_found" geom1="box" geom2="left_finger_pad" reduce="mindist" num="1" data="found"/>
+    <contact name="box_right_finger_pad_found" geom1="box" geom2="right_finger_pad" reduce="mindist" num="1" data="found"/>
   </sensor>
 </mujoco>

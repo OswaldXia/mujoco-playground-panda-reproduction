@@ -64,6 +64,13 @@ def sample_box_y(
   return jp.where(use_target, target_y, base_y)
 
 
+def sample_guide_swap(
+    rng: jax.Array, newly_reset: jax.Array, probability: float
+) -> jax.Array:
+  """Samples the training-only guide-state exploration aid."""
+  return newly_reset & jax.random.bernoulli(rng, probability)
+
+
 def default_config():
   config = config_dict.create(
       ctrl_dt=0.05,
@@ -97,6 +104,8 @@ def default_config():
       # Optional targeted component. Zero preserves the upstream reset path.
       box_init_target_y_range=[-0.05, -0.02],
       box_init_target_probability=0.0,
+      # Training exploration aid. Formal evaluation overrides this to zero.
+      guide_swap_probability=0.05,
       success_threshold=0.05,
       action_history_length=1,
       impl='warp',
@@ -127,6 +136,9 @@ class PandaPickCubeCartesian(pick.PandaPickCube):
     target_probability = float(self._config.box_init_target_probability)
     if not 0.0 <= target_probability <= 1.0:
       raise ValueError("box_init_target_probability must be between 0 and 1")
+    guide_swap_probability = float(self._config.guide_swap_probability)
+    if not 0.0 <= guide_swap_probability <= 1.0:
+      raise ValueError("guide_swap_probability must be between 0 and 1")
     base_range = float(self._config.box_init_range)
     if target_probability > 0.0:
       if len(target_y_range) != 2 or target_y_range[0] >= target_y_range[1]:
@@ -165,6 +177,10 @@ class PandaPickCubeCartesian(pick.PandaPickCube):
 
     # Contact sensor ID.
     self._box_hand_found_sensor = self._mj_model.sensor('box_hand_found').id
+    self._box_finger_found_sensor = [
+        self._mj_model.sensor(f'box_{side}_finger_pad_found').id
+        for side in ('left', 'right')
+    ]
 
     # Contact sensor IDs.
     self._floor_hand_found_sensor = [
@@ -327,9 +343,14 @@ class PandaPickCubeCartesian(pick.PandaPickCube):
         newly_reset, jp.zeros(3), state.info['prev_action']
     )
 
-    # Ocassionally aid exploration.
+    # Occasionally aid training exploration. Evaluation overrides probability
+    # to zero so policy quality is not mixed with this guide-state shortcut.
     state.info['rng'], key_swap = jax.random.split(state.info['rng'])
-    to_sample = newly_reset * jax.random.bernoulli(key_swap, 0.05)
+    to_sample = sample_guide_swap(
+        key_swap,
+        newly_reset,
+        float(self._config.guide_swap_probability),
+    )
     swapped_data = state.data.replace(
         qpos=self._guide_q, ctrl=self._guide_ctrl
     )  # help hit the terminal sparse reward.

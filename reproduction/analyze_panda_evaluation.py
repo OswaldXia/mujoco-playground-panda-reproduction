@@ -131,11 +131,23 @@ def write_episode_csv(path: Path, records: list[dict]) -> None:
       "min_gripper_box_distance",
       "min_target_height_error",
       "max_box_height",
+      "min_gripper_aperture",
+      "max_gripper_aperture",
+      "gripper_aperture_at_first_reached",
+      "gripper_aperture_at_first_lift",
+      "close_command_at_first_reached",
+      "close_command_fraction_until_reach",
+      "ever_left_finger_box_contact",
+      "ever_right_finger_box_contact",
+      "ever_bilateral_finger_box_contact",
+      "bilateral_contact_at_first_reached",
       "ever_reached_box",
       "ever_lifted",
       "lifted_then_dropped",
       "first_reached_box_step",
+      "first_bilateral_finger_contact_step",
       "first_lift_step",
+      "reach_to_lift_steps",
   )
   with path.open("w", encoding="utf-8", newline="") as file:
     writer = csv.DictWriter(file, fieldnames=fields)
@@ -162,6 +174,36 @@ def write_episode_csv(path: Path, records: list[dict]) -> None:
               "min_target_height_error", ""
           ),
           "max_box_height": trajectory.get("max_box_height", ""),
+          "min_gripper_aperture": trajectory.get(
+              "min_gripper_aperture", ""
+          ),
+          "max_gripper_aperture": trajectory.get(
+              "max_gripper_aperture", ""
+          ),
+          "gripper_aperture_at_first_reached": trajectory.get(
+              "gripper_aperture_at_first_reached", ""
+          ),
+          "gripper_aperture_at_first_lift": trajectory.get(
+              "gripper_aperture_at_first_lift", ""
+          ),
+          "close_command_at_first_reached": trajectory.get(
+              "close_command_at_first_reached", ""
+          ),
+          "close_command_fraction_until_reach": trajectory.get(
+              "close_command_fraction_until_reach", ""
+          ),
+          "ever_left_finger_box_contact": trajectory.get(
+              "ever_left_finger_box_contact", ""
+          ),
+          "ever_right_finger_box_contact": trajectory.get(
+              "ever_right_finger_box_contact", ""
+          ),
+          "ever_bilateral_finger_box_contact": trajectory.get(
+              "ever_bilateral_finger_box_contact", ""
+          ),
+          "bilateral_contact_at_first_reached": trajectory.get(
+              "bilateral_contact_at_first_reached", ""
+          ),
           "ever_reached_box": trajectory.get("ever_reached_box", ""),
           "ever_lifted": trajectory.get("ever_lifted", ""),
           "lifted_then_dropped": trajectory.get(
@@ -170,7 +212,13 @@ def write_episode_csv(path: Path, records: list[dict]) -> None:
           "first_reached_box_step": trajectory.get(
               "first_reached_box_step", ""
           ),
+          "first_bilateral_finger_contact_step": trajectory.get(
+              "first_bilateral_finger_contact_step", ""
+          ),
           "first_lift_step": trajectory.get("first_lift_step", ""),
+          "reach_to_lift_steps": trajectory.get(
+              "reach_to_lift_steps", ""
+          ),
       })
 
 
@@ -191,6 +239,87 @@ def build_failure_classification_artifact(
       "summary": classification,
       "failure_cases": failures,
   }
+
+
+def build_grasp_acquisition_comparison(
+    records: list[dict],
+) -> dict[str, Any] | None:
+  """Compares physical grasp acquisition signals by episode outcome."""
+  if not any(
+      "gripper_aperture_at_first_reached" in record.get("trajectory", {})
+      for record in records
+  ):
+    return None
+
+  def mean(values: list[float]) -> float | None:
+    return sum(values) / len(values) if values else None
+
+  comparison = {}
+  for label, expected_success in (("success", True), ("failure", False)):
+    selected = [
+        record
+        for record in records
+        if bool(record["success"]) == expected_success
+    ]
+    trajectories = [record.get("trajectory", {}) for record in selected]
+    apertures = [
+        float(trajectory["gripper_aperture_at_first_reached"])
+        for trajectory in trajectories
+        if float(trajectory.get("gripper_aperture_at_first_reached", -1)) >= 0
+    ]
+    close_fractions = [
+        float(trajectory["close_command_fraction_until_reach"])
+        for trajectory in trajectories
+        if trajectory.get("close_command_fraction_until_reach") is not None
+    ]
+    lift_latencies = [
+        float(trajectory["reach_to_lift_steps"])
+        for trajectory in trajectories
+        if float(trajectory.get("reach_to_lift_steps", -1)) >= 0
+    ]
+    count = len(selected)
+    comparison[label] = {
+        "episodes": count,
+        "mean_reward": mean([float(record["reward"]) for record in selected]),
+        "lifted_rate": (
+            sum(bool(item.get("ever_lifted", False)) for item in trajectories)
+            / count
+            if count
+            else None
+        ),
+        "ever_bilateral_contact_rate": (
+            sum(
+                bool(item.get("ever_bilateral_finger_box_contact", False))
+                for item in trajectories
+            )
+            / count
+            if count
+            else None
+        ),
+        "bilateral_contact_at_reach_rate": (
+            sum(
+                bool(item.get("bilateral_contact_at_first_reached", False))
+                for item in trajectories
+            )
+            / count
+            if count
+            else None
+        ),
+        "close_command_at_reach_rate": (
+            sum(
+                bool(item.get("close_command_at_first_reached", False))
+                for item in trajectories
+            )
+            / count
+            if count
+            else None
+        ),
+        "mean_close_command_fraction_until_reach": mean(close_fractions),
+        "mean_gripper_aperture_at_reach": mean(apertures),
+        "mean_reach_to_lift_steps": mean(lift_latencies),
+        "episodes_with_lift_latency": len(lift_latencies),
+    }
+  return comparison
 
 
 def write_bin_csv(path: Path, bins: list[dict]) -> None:
@@ -330,8 +459,13 @@ def main() -> None:
   classification_artifact = build_failure_classification_artifact(
       report, failures
   )
+  grasp_comparison = build_grasp_acquisition_comparison(records)
   if classification_artifact is not None:
     classification_artifact["source_report"] = str(report_path)
+    if grasp_comparison is not None:
+      classification_artifact["grasp_acquisition_comparison"] = (
+          grasp_comparison
+      )
     classification_json.write_text(
         json.dumps(classification_artifact, indent=2) + "\n",
         encoding="utf-8",
@@ -369,6 +503,8 @@ def main() -> None:
     summary["artifacts"]["failure_classification_json"] = (
         classification_json.name
     )
+  if grasp_comparison is not None:
+    summary["grasp_acquisition_comparison"] = grasp_comparison
   summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
 
   print("\nPosition-stratified analysis complete")
@@ -389,6 +525,20 @@ def main() -> None:
     for name, count in classification_artifact["summary"]["counts"].items():
       print(f"    {name:<32}{count:>5}")
     print(f"  {'Classification':<22}{classification_json}")
+  if grasp_comparison is not None:
+    print("\n  Grasp-acquisition comparison")
+    for label in ("success", "failure"):
+      values = grasp_comparison[label]
+      bilateral = values["ever_bilateral_contact_rate"]
+      lifted = values["lifted_rate"]
+      aperture = values["mean_gripper_aperture_at_reach"]
+      bilateral_text = f"{bilateral:.2%}" if bilateral is not None else "n/a"
+      lifted_text = f"{lifted:.2%}" if lifted is not None else "n/a"
+      aperture_text = f"{aperture:.4f} m" if aperture is not None else "n/a"
+      print(
+          f"    {label:<10} bilateral-ever={bilateral_text} | "
+          f"lifted={lifted_text} | aperture-at-reach={aperture_text}"
+      )
   print(f"  {'Analysis summary':<22}{summary_path}")
 
 

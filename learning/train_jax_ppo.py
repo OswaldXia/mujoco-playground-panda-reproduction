@@ -597,6 +597,8 @@ def main(argv):
     progress_reporter.update(num_steps, metrics)
 
   eval_env_overrides = dict(env_cfg_overrides)
+  if _ENV_NAME.value == "PandaPickCubeCartesian":
+    eval_env_overrides["guide_swap_probability"] = 0.0
   if _VISION.value:
     eval_env_overrides["vision_config.nworld"] = num_eval_envs
   eval_env = registry.load(
@@ -662,6 +664,8 @@ def main(argv):
   jit_inference_fn = jax.jit(inference_fn)
 
   infer_env_overrides = dict(env_cfg_overrides)
+  if _ENV_NAME.value == "PandaPickCubeCartesian":
+    infer_env_overrides["guide_swap_probability"] = 0.0
   if _VISION.value:
     infer_env_overrides["vision_config.nworld"] = _NUM_VIDEOS.value
   infer_env = registry.load(

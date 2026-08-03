@@ -317,6 +317,7 @@ def main() -> None:
   env_overrides = {
       "impl": "warp",
       "vision": True,
+      "guide_swap_probability": 0.0,
       "vision_config.nworld": args.num_envs,
       "naconmax": contact_capacity,
       "naccdmax": contact_capacity,
@@ -344,9 +345,19 @@ def main() -> None:
       "Initial cube y",
       f"{initial_y_sampling['mode']} {initial_y_sampling['range']}",
   )
+  print_item("Guide-state aid", "disabled (formal evaluation)")
   base_env = registry.load(
       ENV_NAME, config=env_config, config_overrides=env_overrides
   )
+  guide_swap_probability = float(
+      base_env.unwrapped._config.guide_swap_probability
+      # pylint: disable=protected-access
+  )
+  if guide_swap_probability != 0.0:
+    raise RuntimeError(
+        "Formal evaluation requires guide_swap_probability=0.0, got "
+        f"{guide_swap_probability}."
+    )
   episode_length = (
       args.development_episode_length or int(env_config.episode_length)
   )
@@ -382,10 +393,20 @@ def main() -> None:
   gripper_site_id = int(
       base_env.unwrapped._gripper_site  # pylint: disable=protected-access
   )
+  robot_qpos_addresses = (
+      base_env.unwrapped._robot_qposadr  # pylint: disable=protected-access
+  )
+  finger_qpos_addresses = np.asarray(robot_qpos_addresses[-2:], dtype=int)
+  finger_sensor_addresses = np.asarray([
+      base_env.unwrapped._mj_model.sensor_adr[sensor_id]
+      for sensor_id in base_env.unwrapped._box_finger_found_sensor
+      # pylint: disable=protected-access
+  ], dtype=int)
 
   def observe_trajectory(state):
     box_position = state.data.xpos[:, object_body_id]
     gripper_position = state.data.site_xpos[:, gripper_site_id]
+    finger_contact = state.data.sensordata[:, finger_sensor_addresses] > 0
     return {
         "box_position": box_position,
         "gripper_box_distance": jnp.linalg.norm(
@@ -394,6 +415,11 @@ def main() -> None:
         "target_height_error": jnp.abs(
             box_position[:, 2] - state.info["target_pos"][:, 2]
         ),
+        "gripper_aperture": jnp.sum(
+            state.data.qpos[:, finger_qpos_addresses], axis=-1
+        ),
+        "left_finger_box_contact": finger_contact[:, 0],
+        "right_finger_box_contact": finger_contact[:, 1],
     }
 
   @jax.jit
@@ -403,11 +429,15 @@ def main() -> None:
     initial = observe_trajectory(state)
     batch_size = state.reward.shape[0]
     missing_step = jnp.full((batch_size,), -1, dtype=jnp.int32)
+    missing_value = jnp.full((batch_size,), -1.0, dtype=jnp.float32)
+    zero_count = jnp.zeros((batch_size,), dtype=jnp.int32)
     trajectory = {
         "active": jnp.ones((batch_size,), dtype=bool),
         "min_gripper_box_distance": initial["gripper_box_distance"],
         "min_target_height_error": initial["target_height_error"],
         "max_box_height": initial["box_position"][:, 2],
+        "min_gripper_aperture": initial["gripper_aperture"],
+        "max_gripper_aperture": initial["gripper_aperture"],
         "last_active_box_position": initial["box_position"],
         "ever_approached": initial["gripper_box_distance"]
         <= APPROACH_DISTANCE_METERS,
@@ -415,6 +445,13 @@ def main() -> None:
         "ever_lifted": initial["box_position"][:, 2] > LIFT_HEIGHT_METERS,
         "lifted_then_dropped": jnp.zeros((batch_size,), dtype=bool),
         "ever_close_command": jnp.zeros((batch_size,), dtype=bool),
+        "ever_open_command": jnp.zeros((batch_size,), dtype=bool),
+        "ever_left_finger_box_contact": initial["left_finger_box_contact"],
+        "ever_right_finger_box_contact": initial["right_finger_box_contact"],
+        "ever_bilateral_finger_box_contact": (
+            initial["left_finger_box_contact"]
+            & initial["right_finger_box_contact"]
+        ),
         "ever_hand_box_collision": jnp.zeros((batch_size,), dtype=bool),
         "ever_out_of_bounds_or_invalid": jnp.zeros(
             (batch_size,), dtype=bool
@@ -422,8 +459,20 @@ def main() -> None:
         "first_approach_step": missing_step,
         "first_reached_box_step": missing_step,
         "first_close_command_step": missing_step,
+        "first_open_command_step": missing_step,
+        "first_bilateral_finger_contact_step": missing_step,
         "first_lift_step": missing_step,
         "first_success_step": missing_step,
+        "gripper_aperture_at_first_reached": missing_value,
+        "gripper_aperture_at_first_lift": missing_value,
+        "close_command_at_first_reached": jnp.zeros(
+            (batch_size,), dtype=bool
+        ),
+        "bilateral_contact_at_first_reached": jnp.zeros(
+            (batch_size,), dtype=bool
+        ),
+        "command_steps_until_reach": zero_count,
+        "close_command_steps_until_reach": zero_count,
     }
 
     def first_occurrence(previous, occurred, step_number):
@@ -460,10 +509,25 @@ def main() -> None:
           observed["box_position"][:, 2],
           current_trajectory["max_box_height"],
       )
+      aperture = jnp.where(
+          active_after,
+          observed["gripper_aperture"],
+          current_trajectory["min_gripper_aperture"],
+      )
       approached_now = active & (distance <= APPROACH_DISTANCE_METERS)
       reached_now = active & (next_state.info["reached_box"] > 0.5)
       lifted_now = active & (next_state.metrics["reward/lifted"] > 0.0)
       close_now = active & (action[:, 2] < 0.0)
+      open_now = active & ~close_now
+      left_finger_contact_now = (
+          active_after & observed["left_finger_box_contact"]
+      )
+      right_finger_contact_now = (
+          active_after & observed["right_finger_box_contact"]
+      )
+      bilateral_contact_now = (
+          left_finger_contact_now & right_finger_contact_now
+      )
       collision_now = active & (
           next_state.metrics["reward/no_box_collision"] < 0.5
       )
@@ -472,6 +536,15 @@ def main() -> None:
           | jnp.isnan(next_state.reward)
       )
       success_now = active & (next_state.metrics["reward/success"] > 0.5)
+      first_reach_now = reached_now & (
+          current_trajectory["first_reached_box_step"] < 0
+      )
+      first_lift_now = lifted_now & (
+          current_trajectory["first_lift_step"] < 0
+      )
+      before_or_at_first_reach = active & (
+          current_trajectory["first_reached_box_step"] < 0
+      )
       ever_lifted = current_trajectory["ever_lifted"] | lifted_now
       dropped_now = (
           active_after
@@ -491,6 +564,12 @@ def main() -> None:
           "max_box_height": jnp.maximum(
               current_trajectory["max_box_height"], box_height
           ),
+          "min_gripper_aperture": jnp.minimum(
+              current_trajectory["min_gripper_aperture"], aperture
+          ),
+          "max_gripper_aperture": jnp.maximum(
+              current_trajectory["max_gripper_aperture"], aperture
+          ),
           "last_active_box_position": jnp.where(
               active_after[:, None],
               observed["box_position"],
@@ -508,6 +587,21 @@ def main() -> None:
           ),
           "ever_close_command": (
               current_trajectory["ever_close_command"] | close_now
+          ),
+          "ever_open_command": (
+              current_trajectory["ever_open_command"] | open_now
+          ),
+          "ever_left_finger_box_contact": (
+              current_trajectory["ever_left_finger_box_contact"]
+              | left_finger_contact_now
+          ),
+          "ever_right_finger_box_contact": (
+              current_trajectory["ever_right_finger_box_contact"]
+              | right_finger_contact_now
+          ),
+          "ever_bilateral_finger_box_contact": (
+              current_trajectory["ever_bilateral_finger_box_contact"]
+              | bilateral_contact_now
           ),
           "ever_hand_box_collision": (
               current_trajectory["ever_hand_box_collision"] | collision_now
@@ -531,6 +625,16 @@ def main() -> None:
               close_now,
               step_number,
           ),
+          "first_open_command_step": first_occurrence(
+              current_trajectory["first_open_command_step"],
+              open_now,
+              step_number,
+          ),
+          "first_bilateral_finger_contact_step": first_occurrence(
+              current_trajectory["first_bilateral_finger_contact_step"],
+              bilateral_contact_now,
+              step_number,
+          ),
           "first_lift_step": first_occurrence(
               current_trajectory["first_lift_step"],
               lifted_now,
@@ -540,6 +644,34 @@ def main() -> None:
               current_trajectory["first_success_step"],
               success_now,
               step_number,
+          ),
+          "gripper_aperture_at_first_reached": jnp.where(
+              first_reach_now,
+              observed["gripper_aperture"],
+              current_trajectory["gripper_aperture_at_first_reached"],
+          ),
+          "gripper_aperture_at_first_lift": jnp.where(
+              first_lift_now,
+              observed["gripper_aperture"],
+              current_trajectory["gripper_aperture_at_first_lift"],
+          ),
+          "close_command_at_first_reached": jnp.where(
+              first_reach_now,
+              close_now,
+              current_trajectory["close_command_at_first_reached"],
+          ),
+          "bilateral_contact_at_first_reached": jnp.where(
+              first_reach_now,
+              bilateral_contact_now,
+              current_trajectory["bilateral_contact_at_first_reached"],
+          ),
+          "command_steps_until_reach": (
+              current_trajectory["command_steps_until_reach"]
+              + before_or_at_first_reach.astype(jnp.int32)
+          ),
+          "close_command_steps_until_reach": (
+              current_trajectory["close_command_steps_until_reach"]
+              + (before_or_at_first_reach & close_now).astype(jnp.int32)
           ),
       }
       return (next_state, current_key, updated), None
@@ -597,6 +729,18 @@ def main() -> None:
     failure_positions = initial_box_positions[~success_mask]
 
     for environment_index in range(args.num_envs):
+      command_steps_until_reach = int(
+          trajectory["command_steps_until_reach"][environment_index]
+      )
+      close_steps_until_reach = int(
+          trajectory["close_command_steps_until_reach"][environment_index]
+      )
+      first_reached_step = int(
+          trajectory["first_reached_box_step"][environment_index]
+      )
+      first_lift_step = int(
+          trajectory["first_lift_step"][environment_index]
+      )
       episode_trajectory = {
           "min_gripper_box_distance": float(
               trajectory["min_gripper_box_distance"][environment_index]
@@ -606,6 +750,20 @@ def main() -> None:
           ),
           "max_box_height": float(
               trajectory["max_box_height"][environment_index]
+          ),
+          "min_gripper_aperture": float(
+              trajectory["min_gripper_aperture"][environment_index]
+          ),
+          "max_gripper_aperture": float(
+              trajectory["max_gripper_aperture"][environment_index]
+          ),
+          "gripper_aperture_at_first_reached": float(
+              trajectory["gripper_aperture_at_first_reached"][
+                  environment_index
+              ]
+          ),
+          "gripper_aperture_at_first_lift": float(
+              trajectory["gripper_aperture_at_first_lift"][environment_index]
           ),
           "last_active_box_position": np.round(
               trajectory["last_active_box_position"][environment_index], 6
@@ -625,6 +783,33 @@ def main() -> None:
           "ever_close_command": bool(
               trajectory["ever_close_command"][environment_index]
           ),
+          "ever_open_command": bool(
+              trajectory["ever_open_command"][environment_index]
+          ),
+          "close_command_at_first_reached": bool(
+              trajectory["close_command_at_first_reached"][environment_index]
+          ),
+          "close_command_fraction_until_reach": (
+              close_steps_until_reach / command_steps_until_reach
+              if command_steps_until_reach
+              else None
+          ),
+          "ever_left_finger_box_contact": bool(
+              trajectory["ever_left_finger_box_contact"][environment_index]
+          ),
+          "ever_right_finger_box_contact": bool(
+              trajectory["ever_right_finger_box_contact"][environment_index]
+          ),
+          "ever_bilateral_finger_box_contact": bool(
+              trajectory["ever_bilateral_finger_box_contact"][
+                  environment_index
+              ]
+          ),
+          "bilateral_contact_at_first_reached": bool(
+              trajectory["bilateral_contact_at_first_reached"][
+                  environment_index
+              ]
+          ),
           "ever_hand_box_collision": bool(
               trajectory["ever_hand_box_collision"][environment_index]
           ),
@@ -634,14 +819,23 @@ def main() -> None:
           "first_approach_step": int(
               trajectory["first_approach_step"][environment_index]
           ),
-          "first_reached_box_step": int(
-              trajectory["first_reached_box_step"][environment_index]
-          ),
+          "first_reached_box_step": first_reached_step,
           "first_close_command_step": int(
               trajectory["first_close_command_step"][environment_index]
           ),
-          "first_lift_step": int(
-              trajectory["first_lift_step"][environment_index]
+          "first_open_command_step": int(
+              trajectory["first_open_command_step"][environment_index]
+          ),
+          "first_bilateral_finger_contact_step": int(
+              trajectory["first_bilateral_finger_contact_step"][
+                  environment_index
+              ]
+          ),
+          "first_lift_step": first_lift_step,
+          "reach_to_lift_steps": (
+              first_lift_step - first_reached_step
+              if first_lift_step >= 0 and first_reached_step >= 0
+              else -1
           ),
           "first_success_step": int(
               trajectory["first_success_step"][environment_index]
@@ -725,13 +919,14 @@ def main() -> None:
 
   git_status = git_value(project_dir, "status", "--porcelain")
   report = {
-      "schema_version": 3,
+      "schema_version": 4,
       "generated_at_utc": datetime.datetime.now(datetime.UTC).isoformat(),
       "environment": ENV_NAME,
       "checkpoint": str(checkpoint_path),
       "checkpoint_step": checkpoint_step,
       "evaluation": {
           "deterministic_policy": True,
+          "guide_swap_probability": guide_swap_probability,
           "held_out_seeds": args.seeds,
           "episodes_per_seed": args.num_envs,
           "episode_length": episode_length,
@@ -756,6 +951,17 @@ def main() -> None:
                   "ever_hand_box_collision": (
                       "Collision between the cube and hand capsule; this is "
                       "not interpreted as a successful grasp contact."
+                  ),
+                  "finger_box_contact": (
+                      "Physical contact sensors between the cube and each "
+                      "finger pad; bilateral means both sensors are active."
+                  ),
+                  "gripper_aperture": (
+                      "Sum of the two finger-joint positions in meters."
+                  ),
+                  "guide_swap_probability": (
+                      "Forced to zero for formal evaluation; training keeps "
+                      "the configured exploration aid."
                   ),
               },
               "failure_classification": failure_classification,
