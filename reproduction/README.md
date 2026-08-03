@@ -250,11 +250,12 @@ The curated evidence is in
 
 ### Trajectory-level failure classification
 
-Schema version 3 adds stage-level diagnostics to every episode without changing
-the policy, checkpoint, reward, or training configuration. It records approach,
-the environment's official 12 mm `reached_box` condition, close commands,
-lifting, dropping, target-height error, hand-capsule collisions, and the first
-step of each key event. A failure is assigned to exactly one class:
+Schema version 4 adds stage-level diagnostics without changing the policy,
+checkpoint, reward, or training configuration. It records approach, the
+environment's official 12 mm `reached_box` condition, close/open commands,
+physical finger aperture, left/right/bilateral finger-pad contact, lifting,
+dropping, target-height error, and the first step of each key event. A failure
+is assigned to exactly one class:
 
 - `out_of_bounds_or_invalid`
 - `never_approached`
@@ -269,6 +270,24 @@ The evaluator prints class counts at completion, adds all trajectory fields to
 `episodes.csv`, and writes a standalone `failure-classification.json` in the
 analysis directory.
 
+The first schema-version-3 trajectory run recorded 963/1,024 left-side success
+(`94.04%`) and classified 52 of 61 failures (`85.25%`) as
+`reached_no_lift`. Successful and failed episodes both issued their first close
+command at step 1, so that event alone does not distinguish the outcome. The
+same report exposed 50 step-1 reached episodes, all successful, matching the
+environment's hard-coded 5% guide-state exploration aid. Historical schema-2
+and schema-3 evaluations therefore mix policy performance with training
+assistance and are retained as development evidence, not guide-free acceptance.
+The compact analysis record is committed at
+`reproduction/results/linux-trajectory-failure-analysis.json`.
+
+The guide-state probability is now configurable: training preserves the 5%
+default, while periodic training evaluation, replay inference, and independent
+formal evaluation force it to zero. The independent evaluator verifies the
+effective value and records it in every schema-version-4 report. A robustness
+resume also rejects legacy reports so old and corrected evaluations cannot be
+combined.
+
 Run the focused collection on the Linux NVIDIA server with:
 
 ```bash
@@ -277,11 +296,12 @@ git pull
 ```
 
 The command automatically selects the completed robustness checkpoint and
-evaluates 1,024 new episodes over the left-side range `[-0.05, -0.02)`, which
-was the only missed gate. Results are stored under
+evaluates 1,024 new guide-free episodes over the left-side range
+`[-0.05, -0.02)`, which was the only missed gate. Results are stored under
 `reproduction/artifacts/panda-failure-modes/<timestamp>/`. This must be a new
-rollout: schema-version-2 reports contain final outcomes and initial positions,
-but not the intermediate states needed to reconstruct a failure trajectory.
+rollout: earlier reports either lack intermediate states or include the
+guide-state aid. The new finger-contact and aperture fields allow successful
+and failed grasp acquisition to be compared directly.
 Use the dominant class to choose one controlled intervention; do not combine
 multiple reward, sampling, and policy changes in the first follow-up run.
 

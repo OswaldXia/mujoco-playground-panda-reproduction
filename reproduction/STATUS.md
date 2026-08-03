@@ -28,7 +28,8 @@
 - [x] Targeted robustness GPU smoke completed
 - [x] Targeted robustness experiment completed
 - [x] Trajectory-level failure-classification tooling implemented
-- [ ] Left-side trajectory dataset collected on the Linux NVIDIA server
+- [x] Guide-state evaluation leakage identified and disabled in formal tools
+- [ ] Corrected guide-free left-side trajectory dataset collected
 - [ ] All targeted robustness acceptance criteria passed
 
 ## macOS state-smoke result (2026-08-02)
@@ -162,7 +163,7 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Acceptance: preserve at least 95% aggregate on the original distribution,
   reach at least 95% on the left region, and at least 93% on the hard bin, with
   separate worst-seed safeguards
-- Tool validation: fourteen local tests pass, including exact preservation of
+- Tool validation: eighteen local tests pass, including exact preservation of
   the upstream default RNG path, mixture support, interval inference, Fisher
   comparison logic, and mutually exclusive failure classification
 - GPU smoke result: completed 102,400 effective steps with evaluations at step
@@ -179,20 +180,32 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Overall decision: partial success / pre-registered acceptance FAIL. Five of
   six criteria passed; the threshold is not changed after observing the result.
 - Evidence: `reproduction/results/linux-targeted-robustness-evaluation.json`
-- Status: experiment complete; keep the branch separate from `main`
+- Validity note: these historical regressions included the environment's 5%
+  guide-state exploration aid and are development evidence pending guide-free
+  confirmation
+- Status: experiment complete under the historical protocol; keep the branch
+  separate from `main`
 
 ## Trajectory-level failure classification
 
 - Implementation branch: `experiment/left-y-robustness`
-- Scope: evaluation-only observability; no policy, reward, checkpoint, or
-  training hyperparameter changes
-- Report schema: version 3, with per-episode approach, reached-box, close,
-  lift, drop, target-height, collision, and first-event-step diagnostics
+- Scope: evaluation correctness and observability; no policy, reward,
+  checkpoint, or training hyperparameter changes
+- Schema-version-3 result: left-side 963/1,024 (`94.04%`); 52 of 61 failures
+  (`85.25%`) reached the cube but never lifted it
+- Validity finding: 50 episodes reached at step 1 and all succeeded, matching
+  the hard-coded 5% guide-state exploration branch
+- Evaluation fix: `guide_swap_probability` remains 0.05 for training and is
+  forced to 0.0 for periodic evaluation, inference replay, and independent
+  formal evaluation
+- Report schema: version 4, adding physical finger aperture, individual and
+  bilateral finger-pad contact, close state at reach, and reach-to-lift latency
 - Failure classes: invalid/out-of-bounds, never approached, approached but not
   reached, reached but not lifted, lifted then dropped, and lifted timeout
 - Focused runner: `./reproduction/evaluate_panda_failure_modes_gpu.sh`
-- Next decision: collect 1,024 left-side episodes, identify the dominant class,
-  then choose one class-specific intervention before any new fine-tuning run
+- Next decision: rerun 1,024 guide-free left-side episodes, compare grasp
+  acquisition between success and failure, then choose one intervention before
+  any new fine-tuning run
 
 ## Known hardware boundary
 

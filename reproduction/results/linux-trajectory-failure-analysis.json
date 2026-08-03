@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-08-03T10:00:46Z",
+  "environment": "PandaPickCubeCartesian",
+  "checkpoint_step": 2007040,
+  "distribution": {
+    "axis": "initial_box_position.y",
+    "range": [
+      -0.05,
+      -0.02
+    ],
+    "held_out_seeds": [
+      101,
+      202,
+      303,
+      404
+    ]
+  },
+  "protocol": {
+    "report_schema_version": 3,
+    "status": "historical_guide_assisted",
+    "episodes": 1024,
+    "successes": 963,
+    "failures": 61,
+    "success_rate": 0.9404296875,
+    "success_rate_wilson_95": [
+      0.9242204779378205,
+      0.9533467696753672
+    ]
+  },
+  "failure_classification": {
+    "dominant_class": "reached_no_lift",
+    "counts": {
+      "out_of_bounds_or_invalid": 0,
+      "never_approached": 0,
+      "approached_not_reached": 0,
+      "reached_no_lift": 52,
+      "lifted_then_dropped": 6,
+      "lifted_timeout": 3
+    }
+  },
+  "outcome_comparison": {
+    "success": {
+      "episodes": 963,
+      "mean_first_approach_step": 18.8411214953271,
+      "mean_first_reached_box_step": 23.906542056074766,
+      "mean_first_lift_step": 61.65732087227414,
+      "mean_min_gripper_box_distance": 0.004331537365145389,
+      "mean_reward": 9.866331843696031
+    },
+    "failure": {
+      "episodes": 61,
+      "mean_first_approach_step": 19.83606557377049,
+      "mean_first_reached_box_step": 25.229508196721312,
+      "episodes_lifted": 9,
+      "mean_first_lift_step_when_lifted": 125.44444444444444,
+      "mean_min_gripper_box_distance": 0.00578068861676777,
+      "mean_reward": 5.346313140431389
+    },
+    "reached_no_lift": {
+      "episodes": 52,
+      "mean_max_box_height": 0.04284701317262191
+    }
+  },
+  "evaluation_integrity_finding": {
+    "configured_guide_swap_probability": 0.05,
+    "step_1_reached_episodes": 50,
+    "step_1_reached_successes": 50,
+    "first_close_command_at_step_1_episodes": 1024,
+    "remaining_subset_successes": 913,
+    "remaining_subset_episodes": 974,
+    "remaining_subset_success_rate": 0.9373716632443532,
+    "interpretation": "The 50 immediate reached episodes match the training exploration aid. The historical report is not a guide-free acceptance result."
+  },
+  "decision": {
+    "evaluation_fix": "Keep guide_swap_probability=0.05 for training and force 0.0 for periodic and independent evaluation.",
+    "diagnostic_extension": "Record physical aperture, left/right/bilateral finger contact, close state at reach, and reach-to-lift latency.",
+    "next_run": "Repeat 1024 left-side episodes under report schema version 4 before changing reward or retraining."
+  }
+}

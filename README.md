@@ -67,10 +67,10 @@ profile on a MacBook Air with an Apple M1 and 16 GB of memory.
 | Adaptive 10M visual PPO run | Completed on RTX 2080 Ti; best success 3/64 |
 | Initial full-run replay videos | Completed; no visible successful lift |
 | Best-checkpoint fine-tuning | Completed; final success 62/64 (96.875%) |
-| Independent held-out evaluation | Passed; 990/1,024 (96.68%), worst seed 95.70% |
-| Position-stratified evaluation | Passed overall; identified a significant left-side weakness |
+| Independent held-out evaluation | Historical 990/1,024; guide-free confirmation pending |
+| Position-stratified evaluation | Historical result identified a left-side weakness |
 | Targeted robustness 100k smoke | Passed; checkpoint restore, updates, and 3 evaluations completed |
-| Targeted robustness experiment | Partial success; original 97.95%, left 94.53%, hard 94.73% |
+| Targeted robustness experiment | Historical partial result; guide-free confirmation pending |
 
 Machine-readable evidence is committed in
 [`macos-state-smoke.json`](reproduction/results/macos-state-smoke.json) and
@@ -82,13 +82,16 @@ The targeted-training pipeline check is in
 [`linux-robustness-smoke.json`](reproduction/results/linux-robustness-smoke.json).
 The final controlled comparison is in
 [`linux-targeted-robustness-evaluation.json`](reproduction/results/linux-targeted-robustness-evaluation.json).
+The trajectory-stage and evaluation-integrity finding is in
+[`linux-trajectory-failure-analysis.json`](reproduction/results/linux-trajectory-failure-analysis.json).
 
-The final deterministic held-out evaluation used four seeds and 256 episodes
-per seed. It succeeded in 990 of 1,024 episodes (`96.68%`), with a 95% Wilson
-confidence interval of `95.40%` to `97.61%`; the weakest seed still achieved
-`95.70%`. This passes the predefined aggregate `>= 90%` and per-seed `>= 85%`
-criteria. These figures establish reproducibility within the pinned simulated
-setup; they are not evidence of real-robot transfer.
+The historical held-out evaluation used four seeds and 256 episodes per seed
+and succeeded in 990 of 1,024 episodes (`96.68%`). Subsequent trajectory
+instrumentation showed that the environment's 5% guide-state training aid was
+also active during evaluation. Those results remain reproducible development
+evidence, but guide-free schema-version-4 confirmation is required before they
+are treated as formal acceptance. None of these simulation figures are evidence
+of real-robot transfer.
 
 ## Reproducibility decisions
 
