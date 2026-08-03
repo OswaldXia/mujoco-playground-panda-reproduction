@@ -8,3 +8,8 @@ mujoco_menagerie
 checkpoints/
 logs
 .mujoco_playground_asset_cache/
+
+# Keep compact, curated reproduction evidence even when a global Git ignore
+# rule excludes generic results/ directories.
+!reproduction/results/
+!reproduction/results/*.json

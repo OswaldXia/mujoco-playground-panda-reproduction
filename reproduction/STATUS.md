@@ -23,7 +23,7 @@
 - [x] Initial full-run results documented
 - [x] Best-checkpoint fine-tuning completed
 - [x] Training evaluation target (`>= 0.9`) reached
-- [ ] Independent held-out multi-seed evaluation completed
+- [x] Independent held-out multi-seed evaluation completed
 
 ## macOS state-smoke result (2026-08-02)
 
@@ -94,9 +94,29 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Video review: rollouts 0, 2, and 3 visibly reach the lift target; rollout 1
   exposes a remaining hard initial condition
 - Assessment: the fine-tuned policy meets the training-evaluation target;
-  independent held-out evaluation is still required before the final claim
-- Next step: back up the artifact tree, then evaluate four held-out seeds with
-  `reproduction/evaluate_panda_gpu.sh`
+  this was subsequently confirmed by the independent evaluation below
+- Artifact preservation: use `reproduction/backup_panda_run.sh` to retain the
+  ignored checkpoints, videos, logs, and TensorBoard files outside Git
+
+## Linux NVIDIA independent held-out evaluation (2026-08-03)
+
+- Evaluated checkpoint: fine-tune step 10,076,160
+- Protocol: deterministic policy, seeds 101/202/303/404, 256 episodes per seed,
+  1,024 episodes total, with no policy updates
+- Aggregate: 990 successes and 34 failures; success `0.966797` (96.68%)
+- 95% Wilson confidence interval: `0.953961` to `0.976144`
+- Per-seed success: `0.957031`, `0.968750`, `0.972656`, and `0.968750`
+- Worst-seed success: `0.957031` (95.70%)
+- Reward: mean `9.952398`, standard deviation `2.147186`
+- Acceptance: passed the predefined aggregate `>= 0.90` and worst-seed
+  `>= 0.85` thresholds
+- Failure observation: 26 of 34 recorded failure positions have negative
+  cube y coordinates, including 19 in `[-0.04, -0.02)`. Because successful
+  start-position counts were not recorded, this is a descriptive cluster and
+  not a conditional failure-rate estimate.
+- Evidence: `reproduction/results/linux-independent-evaluation.json`
+- Assessment: the pinned simulation reproduction is complete and robust across
+  the selected held-out seeds. Real-robot performance remains outside scope.
 
 ## Known hardware boundary
 

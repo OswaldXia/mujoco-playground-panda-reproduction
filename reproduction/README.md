@@ -212,6 +212,13 @@ reproduction/artifacts/panda-independent-eval/
 └── console-<UTC timestamp>-<process>.log
 ```
 
+The completed 2026-08-03 evaluation of fine-tune step 10,076,160 passed:
+990/1,024 episodes succeeded (`96.68%`), the 95% Wilson interval was
+`95.40%`–`97.61%`, and the worst seed achieved `95.70%`. A compact,
+machine-readable record is committed at
+`reproduction/results/linux-independent-evaluation.json`; the full runtime
+report and console log remain in the ignored artifact directory.
+
 To evaluate a particular checkpoint or reduce memory use:
 
 ```bash

@@ -67,11 +67,19 @@ profile on a MacBook Air with an Apple M1 and 16 GB of memory.
 | Adaptive 10M visual PPO run | Completed on RTX 2080 Ti; best success 3/64 |
 | Initial full-run replay videos | Completed; no visible successful lift |
 | Best-checkpoint fine-tuning | Completed; final success 62/64 (96.875%) |
-| Independent held-out evaluation | Tool ready; server run pending |
+| Independent held-out evaluation | Passed; 990/1,024 (96.68%), worst seed 95.70% |
 
 Machine-readable evidence is committed in
 [`macos-state-smoke.json`](reproduction/results/macos-state-smoke.json) and
-[`macos-vision-probe.json`](reproduction/results/macos-vision-probe.json).
+[`macos-vision-probe.json`](reproduction/results/macos-vision-probe.json), and
+[`linux-independent-evaluation.json`](reproduction/results/linux-independent-evaluation.json).
+
+The final deterministic held-out evaluation used four seeds and 256 episodes
+per seed. It succeeded in 990 of 1,024 episodes (`96.68%`), with a 95% Wilson
+confidence interval of `95.40%` to `97.61%`; the weakest seed still achieved
+`95.70%`. This passes the predefined aggregate `>= 90%` and per-seed `>= 85%`
+criteria. These figures establish reproducibility within the pinned simulated
+setup; they are not evidence of real-robot transfer.
 
 ## Reproducibility decisions
 
@@ -162,9 +170,10 @@ another 10M steps at learning rate `0.0005`. It writes new artifacts under
 correct source is step 5,017,600 rather than the weaker final checkpoint.
 
 The completed fine-tune run reached `0.96875` success (62/64) and mean reward
-`9.594509` at step 10,076,160. Use `backup_panda_run.sh` to preserve the full
-ignored artifact tree, then use `evaluate_panda_gpu.sh` for a deterministic
-1,024-episode held-out evaluation before recording the final project result.
+`9.594509` at step 10,076,160. Its deterministic 1,024-episode held-out
+evaluation subsequently passed with `0.966797` aggregate success. Use
+`backup_panda_run.sh` to preserve the full ignored artifact tree; the compact
+evaluation evidence is versioned in `reproduction/results/`.
 
 ## Repository layout
 

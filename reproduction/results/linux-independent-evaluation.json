@@ -1,0 +1,96 @@
+{
+  "date": "2026-08-03",
+  "environment": "PandaPickCubeCartesian",
+  "checkpoint_step": 10076160,
+  "checkpoint_source": "panda-vision-finetune",
+  "evaluation": {
+    "deterministic_policy": true,
+    "episode_length": 200,
+    "episodes_per_seed": 256,
+    "held_out_seeds": [
+      101,
+      202,
+      303,
+      404
+    ],
+    "aggregate": {
+      "episodes": 1024,
+      "successes": 990,
+      "failures": 34,
+      "success_rate": 0.966796875,
+      "success_rate_wilson_95": [
+        0.9539609698563387,
+        0.9761435630906761
+      ],
+      "worst_seed_success_rate": 0.95703125,
+      "mean_reward": 9.952398300170898,
+      "std_reward": 2.1471855640411377,
+      "mean_episode_length": 74.4375
+    },
+    "per_seed": [
+      {
+        "seed": 101,
+        "successes": 245,
+        "failures": 11,
+        "success_rate": 0.95703125,
+        "mean_reward": 9.917160034179688
+      },
+      {
+        "seed": 202,
+        "successes": 248,
+        "failures": 8,
+        "success_rate": 0.96875,
+        "mean_reward": 9.97097110748291
+      },
+      {
+        "seed": 303,
+        "successes": 249,
+        "failures": 7,
+        "success_rate": 0.97265625,
+        "mean_reward": 9.769943237304688
+      },
+      {
+        "seed": 404,
+        "successes": 248,
+        "failures": 8,
+        "success_rate": 0.96875,
+        "mean_reward": 10.151517868041992
+      }
+    ],
+    "failure_position_summary": {
+      "positions_recorded": 34,
+      "negative_y": 26,
+      "nonnegative_y": 8,
+      "y_mean": -0.017108676489442587,
+      "y_median": -0.027889500372111797,
+      "y_min": -0.04882600158452988,
+      "y_max": 0.04962899908423424,
+      "y_between_negative_0_04_and_negative_0_02": 19
+    },
+    "acceptance": {
+      "target_success_rate": 0.9,
+      "minimum_seed_success_rate": 0.85,
+      "passed": true
+    }
+  },
+  "runtime": {
+    "hardware": "NVIDIA GeForce RTX 2080 Ti 11 GiB",
+    "jax_backend": "gpu",
+    "jax_device": "cuda:0",
+    "python": "3.12.3",
+    "jax": "0.6.2",
+    "jaxlib": "0.6.2",
+    "brax": "0.14.2",
+    "mujoco": "3.11.0",
+    "mujoco_mjx": "3.11.0",
+    "warp_lang": "1.15.0",
+    "playground": "0.2.0",
+    "git_commit": "cece07248b14730d54256bc81ab351f1bb73938f",
+    "git_dirty": false
+  },
+  "source_report": {
+    "filename": "evaluation-20260803T052520Z-612373.json",
+    "sha256": "4912e0b97d4f47816b42ddfac3fa4db83e4312a644c1bed1f866ec54a24b1f2d"
+  },
+  "upstream_commit": "4db186a5b53427c9d313b9c7200480144894ada1"
+}
