@@ -142,9 +142,15 @@ def network_config_path(checkpoint: Path) -> Path:
 def load_network_config(path: Path) -> config_dict.ConfigDict:
   """Loads Brax network config while preserving optional null initializers."""
   loaded = json.loads(path.read_text(encoding="utf-8"))
-  loaded["observation_size"] = {
-      key: tuple(shape) for key, shape in loaded["observation_size"].items()
-  }
+  observation_size = {}
+  for key, serialized_spec in loaded["observation_size"].items():
+    shape = (
+        serialized_spec["shape"]
+        if isinstance(serialized_spec, dict)
+        else serialized_spec
+    )
+    observation_size[key] = tuple(int(dimension) for dimension in shape)
+  loaded["observation_size"] = observation_size
   factory = loaded["network_factory_kwargs"]
   activation = factory.get("activation")
   if isinstance(activation, str):
