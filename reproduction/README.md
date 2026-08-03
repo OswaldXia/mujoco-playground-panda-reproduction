@@ -239,9 +239,14 @@ machine-readable record is committed at
 report and console log remain in the ignored artifact directory.
 
 That first report used schema version 1 and recorded failure positions only.
-Run the same inference command once more after checking out the failure-analysis
-branch to produce the complete per-episode dataset. This does not train or
-modify the checkpoint.
+The schema-version-2 repeat evaluated the same checkpoint over another 1,024
+episodes and achieved 988/1,024 (`96.48%`). It found 265/290 success (`91.38%`)
+for `y < -0.02`, compared with 723/734 (`98.50%`) elsewhere. The weakest bin,
+`[-0.03, -0.02)`, achieved 67/76 (`88.16%`). A two-sided Fisher exact test for
+the broader left region versus the remainder gives `p = 2.17e-7`, supporting a
+relative spatial weakness while leaving the aggregate acceptance unchanged.
+The curated evidence is in
+`reproduction/results/linux-position-stratified-analysis.json`.
 
 To evaluate a particular checkpoint or reduce memory use:
 
