@@ -15,6 +15,7 @@ COURSE = ROOT / "docs" / "course"
 DOCS = ROOT / "docs"
 REQUIRED_SECTIONS = (
     "## 学习目标",
+    "## 本章知识清单",
     "## 为什么",
     "## 核心知识",
     "## 最小实验",
@@ -58,17 +59,30 @@ class CourseMaterialsTest(unittest.TestCase):
           missing.append(f"{document.relative_to(ROOT)} -> {target}")
     self.assertFalse(missing, "broken local links:\n" + "\n".join(missing))
 
+  def test_markdown_math_uses_github_compatible_block_delimiters(self) -> None:
+    offenders = []
+    for document in COURSE.rglob("*.md"):
+      text = document.read_text(encoding="utf-8")
+      if any(line in (r"\[", r"\]") for line in text.splitlines()):
+        offenders.append(str(document.relative_to(ROOT)))
+    self.assertFalse(
+        offenders,
+        "use $$ blocks instead of \\[ ... \\] for GitHub rendering: "
+        + str(offenders),
+    )
+
   def test_course_release_status_is_honest(self) -> None:
     readme = (COURSE / "README.md").read_text(encoding="utf-8")
     status = (COURSE / "CURRICULUM_STATUS.md").read_text(encoding="utf-8")
-    self.assertIn("v0.10", readme)
-    self.assertIn("v0.10", status)
+    self.assertIn("v0.10.1", readme)
+    self.assertIn("v0.10.1", status)
     self.assertIn("checkpoint", status)
     self.assertIn("clean-clone", status)
 
   def test_fresh_environment_entry_materials_exist(self) -> None:
     required = (
         COURSE / "START_HERE.md",
+        COURSE / "KNOWLEDGE_MAP.md",
         COURSE / "GATE_RUBRIC.md",
         COURSE / "NOTEBOOK_DESIGN.md",
         DOCS / "labs" / "00_course_preflight.py",

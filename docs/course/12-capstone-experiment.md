@@ -9,6 +9,15 @@
 - 完成 smoke、训练、三分布回归与轨迹复检；
 - 无论 PASS/FAIL，都形成可用于求职展示的工程报告。
 
+## 本章知识清单
+
+- **机制瓶颈**：从轨迹证据定位“接触后未稳定抬升”，而非凭直觉改 reward；
+- **可证伪假设**：提前写明改动应改变什么、什么结果会否定它；
+- **单变量**：treatment 只增加 stable-lift reward，其余协议冻结；
+- **等计算量 control**：两臂从同一 checkpoint 各训练相同 3M 步；
+- **配对种子与回归**：相同 seeds 比较 original/left/hard 三分布；
+- **诚实结论**：FAIL 也报告效果量、失败类型和下一步，不改写门槛。
+
 ## 为什么选择这个问题
 
 guide-free 左侧评估为 964/1,024（94.14%），固定 95% 门槛差 9 次。60 次失败
@@ -38,10 +47,10 @@ reward shaping 既可能改善 credit assignment，也可能制造新捷径，�
 
 新 reward raw term：
 
-\[
+$$
 r_{stable\_lift}=I(\text{bilateral contact})\cdot
 clip\left(\frac{z_{box}-z_{reset}}{0.05-z_{reset}},0,1\right).
-\]
+$$
 
 沿用环境已有 progress-reward 机制，只给历史最好值的正增量。权重先固定一个
 保守值并在 smoke 前写入契约；首个正式运行不同时修改采样、PPO、网络、成功

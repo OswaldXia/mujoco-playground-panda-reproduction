@@ -9,6 +9,15 @@
 - 根据显存选择并行环境、评估环境和 batch；
 - 阅读 JIT、训练进度、TensorBoard、checkpoint 和视频。
 
+## 本章知识清单
+
+- **preflight**：训练前确认 CUDA、JAX GPU、显存和固定依赖；
+- **smoke/full/official**：分别验证管线、完整训练工作量、官方并行度；
+- **并行度与 batch**：降低环境数可省显存，但会改变采样/优化结构；
+- **JIT 冷启动**：0% 阶段可能正在编译，不能仅凭暂时无进度判定卡死；
+- **OOM 峰值**：首次 gradient update 的中间张量可能远大于 reset/eval；
+- **产物闭环**：日志、manifest、summary、checkpoint、events 和回放共同验收。
+
 ## 为什么 GPU 配置也是实验设计
 
 减少并行环境可以保持 10M 总步数，但会改变采样/优化批次结构和墙钟时间；

@@ -9,6 +9,14 @@
 - 理解 Mac 验证能证明什么、不能证明什么；
 - 生成 manifest、JSON 报告和图像证据。
 
+## 本章知识清单
+
+- **平台绑定虚拟环境**：macOS 与 Linux 必须分别创建 `.venv`；
+- **JAX backend**：包已安装不等于正在使用 GPU，必须检查 devices/backend；
+- **分层 smoke**：导入 → manifest → state step → 原生 render → 一世界 RGB；
+- **故障半径**：每次只增加一层复杂度，让失败可定位；
+- **能力边界**：Mac 可验证语义和图像路径，不能证明 CUDA 训练吞吐。
+
 ## 为什么先在 Mac 验证
 
 源码、模型、状态、渲染或依赖问题若能在本机复现，就不应占用 GPU 服务器。

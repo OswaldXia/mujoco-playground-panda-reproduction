@@ -40,11 +40,14 @@ class CourseNotebooksTest(unittest.TestCase):
       self.assertTrue(path.is_file(), name)
       self.assertEqual(VALIDATOR.validate_structure(path), [], name)
       notebook = json.loads(path.read_text(encoding="utf-8"))
-      self.assertEqual(notebook["metadata"]["course"]["version"], "v0.10")
+      self.assertEqual(notebook["metadata"]["course"]["version"], "v0.10.1")
 
   def test_launcher_is_executable(self) -> None:
     launcher = ROOT / "reproduction" / "start_course_notebooks.sh"
     self.assertTrue(os.access(launcher, os.X_OK))
+    text = launcher.read_text(encoding="utf-8")
+    self.assertIn('--ServerApp.root_dir="${REPO_ROOT}"', text)
+    self.assertIn('/lab/tree/docs/notebooks', text)
 
   def test_transform_helpers_match_hand_calculation(self) -> None:
     transform = UTILS.rigid_transform(

@@ -12,9 +12,9 @@ importance ratio 乘 advantage 得样本目标 `ratio * A`。若 `A>0`，优化�
 
 PPO-Clip 使用：
 
-\[
+$$
 \min(rA,\;clip(r,1-\epsilon,1+\epsilon)A).
-\]
+$$
 
 这里的 `min` 在负优势时容易直觉出错：
 

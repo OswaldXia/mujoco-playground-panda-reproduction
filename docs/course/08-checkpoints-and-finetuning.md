@@ -9,6 +9,14 @@
 - 从最佳 full checkpoint 进行独立 fine-tune；
 - 创建可验证、不可覆盖的归档。
 
+## 本章知识清单
+
+- **checkpoint 选择集**：按预先规则从开发评估中选模型，不偷看最终 held-out；
+- **最后一步不等于最佳**：on-policy 训练会波动，应按 success/reward 规则选择；
+- **参数 fine-tune**：恢复网络参数但重置 optimizer，不能称为完整 resume；
+- **评估隔离**：训练、选择和最终判断使用不同职责的数据；
+- **不可覆盖归档**：产物带时间/step/SHA-256，写入后重新打开验证。
+
 ## 为什么最后 checkpoint 不一定最好
 
 on-policy 训练会波动。本项目首轮 full 在 5,017,600 步达到 3/64，而最终

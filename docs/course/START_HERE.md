@@ -46,24 +46,36 @@ python3 docs/labs/00_course_preflight.py
 先确认当前位于课程发布分支，再从它创建学习分支：
 
 ```bash
-git switch docs/course-v0.10-notebooks
-git switch -c learn/panda-course-v0.10
+git switch docs/course-v0.10.1-knowledge-map
+git switch -c learn/panda-course-v0.10.1
 mkdir -p notes
 cp docs/templates/reproduction-contract.md notes/00-reproduction-contract.md
 ```
 
-若 `learn/panda-course-v0.10` 已存在，只需切回它，不要重复创建。旧的
-`learn/panda-course-v0.9.1` 分支会保留旧起点；不要强制覆盖含有自己笔记的分支。
+若 `learn/panda-course-v0.10.1` 已存在，只需切回它，不要重复创建。旧的
+`learn/panda-course-v0.10` 和 `learn/panda-course-v0.9.1` 分支会保留旧起点；
+不要强制覆盖含有自己笔记的分支。
 模板不是标准答案，而是防止遗漏预测、协议、证据和边界。
 
-## 5. 安装项目环境（第 06 章前需要）
+## 5. 先建立知识地图
+
+打开 [`KNOWLEDGE_MAP.md`](KNOWLEDGE_MAP.md)，只看“全课程主线”和第 00–02 章。
+把相关知识点标成红/黄/绿。进入每章先读“本章知识清单”，结束后遮住解释复述：
+
+- 红色：没听过，先读对应微课；
+- 黄色：能复述但不会计算、运行或定位源码；
+- 绿色：能脱稿解释，并完成表中“掌握证据”。
+
+不要用“读过一遍”标绿。遇到卡点只回看对应知识点，不必从整章开头重读。
+
+## 6. 安装项目环境（第 06 章前需要）
 
 Mac 与 Linux 必须各自在本机创建 `.venv`，不能复制虚拟环境。若当前已有通过
 预检的 `.venv`，不要重复创建。Mac 的固定安装流程见
 [`06 Mac 本地验证`](06-macos-validation.md)，Linux 见
 [`07 GPU 训练`](07-gpu-training-and-resources.md)。
 
-## 6. 第一学习单元
+## 7. 第一学习单元
 
 依次完成：
 

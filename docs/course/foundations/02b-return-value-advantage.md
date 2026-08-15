@@ -6,9 +6,9 @@
 
 从时刻 t 开始的折扣回报为：
 
-\[
+$$
 G_t=r_t+\gamma r_{t+1}+\gamma^2r_{t+2}+\cdots.
-\]
+$$
 
 若奖励 `[0,0,1]`、`gamma=0.9`，则从头的回报是 `0.81`，最后一步是 `1`。
 折扣既表达对近期结果的偏好，也让长序列数值更稳定。
@@ -21,9 +21,9 @@ G_t=r_t+\gamma r_{t+1}+\gamma^2r_{t+2}+\cdots.
 
 最简单的一步 TD residual：
 
-\[
+$$
 \delta_t=r_t+\gamma(1-d_t)V(o_{t+1})-V(o_t).
-\]
+$$
 
 `done` 时不能把下一回合的价值 bootstrap 进来，所以乘 `(1-d_t)`。
 
@@ -32,9 +32,9 @@ G_t=r_t+\gamma r_{t+1}+\gamma^2r_{t+2}+\cdots.
 只看一步 TD 偏差较大、方差较小；完整 Monte Carlo 回报偏差较小、方差较大。
 GAE 用 `lambda` 将不同长度的 TD residual 混合：
 
-\[
+$$
 A_t^{GAE}=\delta_t+\gamma\lambda(1-d_t)A_{t+1}^{GAE}.
-\]
+$$
 
 实现通常从轨迹末端向前扫描。`lambda` 越接近 1，使用更长期信息；并非越大一定
 越好。训练前常对 batch 内 advantage 标准化，这改变尺度但保留相对信号。

@@ -9,6 +9,14 @@
 - 能读取 `qpos`、`qvel`、`ctrl`、`xpos` 与 `sensordata`；
 - 用最小模型完成 reset、control、step 和状态检查。
 
+## 本章知识清单
+
+- **MJCF**：描述机器人、场景、碰撞、传感器与执行器的 XML 源模型；
+- **`MjModel` 与 `MjData`**：前者保存编译后的结构，后者保存每次运行的可变状态；
+- **body/joint/geom/site**：分别组织刚体、自由度、碰撞形状和测量/目标标记；
+- **`qpos/qvel/ctrl`**：广义位置、广义速度和 actuator 输入；
+- **物理步与控制步**：`ctrl_dt/sim_dt=10`，一个动作会推进十个物理子步。
+
 ## 为什么需要这些概念
 
 策略输出最终必须变成 actuator control，成功与接触则来自仿真状态/传感器。

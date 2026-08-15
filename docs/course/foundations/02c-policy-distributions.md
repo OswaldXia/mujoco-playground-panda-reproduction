@@ -21,10 +21,10 @@ log pi(a|o) = sum_i log pi_i(a_i|o)
 policy gradient 的关键直觉是：正优势动作应变得更可能，负优势动作应变得更不
 可能。PPO 保存采样时旧策略的 `log_prob_old`，更新时计算：
 
-\[
+$$
 ratio=\frac{\pi_{new}(a|o)}{\pi_{old}(a|o)}
      =\exp(\log\pi_{new}-\log\pi_{old}).
-\]
+$$
 
 ratio=1 表示该已采样动作的概率没变；1.2 表示相对增加 20%，不是“动作值增加
 20%”。
