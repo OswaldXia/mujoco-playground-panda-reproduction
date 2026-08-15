@@ -102,7 +102,8 @@ v0.9.1 已具备分路线入口、环境预检、完整路径、真实命令、�
 ## 使用方法
 
 1. 从 [`START_HERE.md`](START_HERE.md) 运行预检并确认路线。
-2. 新建学习分支：`git switch -c learn/panda-course`。
+2. 从课程发布分支新建学习分支：
+   `git switch -c learn/panda-course-v0.9.1`；已有同名分支则直接切换。
 3. 若当前 checkout 没有 `.venv`，先执行第 06 章“操作”中的创建与安装命令，
    安装完成后返回第 00 章；Mac/Linux 必须各自在本机创建。
 4. 顺序完成章节，不跳过 Gate；把答案写入自己的 `notes/`。

@@ -43,16 +43,18 @@ python3 docs/labs/00_course_preflight.py
 
 ## 4. 创建学习记录
 
-如果还没有学习分支：
+先确认当前位于课程发布分支，再从它创建学习分支：
 
 ```bash
-git switch -c learn/panda-course
+git switch docs/course-v0.9.1-usability
+git switch -c learn/panda-course-v0.9.1
 mkdir -p notes
 cp docs/templates/reproduction-contract.md notes/00-reproduction-contract.md
 ```
 
-如果分支已经存在，只需切回它；不要重复创建。模板不是标准答案，而是防止遗漏
-预测、协议、证据和边界。
+若 `learn/panda-course-v0.9.1` 已存在，只需切回它，不要重复创建。旧的
+`learn/panda-course` 分支会保留 v0.9 起点；不要强制覆盖含有自己笔记的旧分支。
+模板不是标准答案，而是防止遗漏预测、协议、证据和边界。
 
 ## 5. 安装项目环境（第 06 章前需要）
 
