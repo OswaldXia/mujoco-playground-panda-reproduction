@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -83,6 +85,53 @@ class CourseMaterialsTest(unittest.TestCase):
       if "pytest reproduction/tests" in text:
         offenders.append(str(document.relative_to(ROOT)))
     self.assertFalse(offenders, f"pytest-only test commands: {offenders}")
+
+  def test_foundation_micro_lessons_are_complete(self) -> None:
+    expected = {
+        "01a-vectors-and-frames.md",
+        "01b-homogeneous-transforms.md",
+        "01c-fk-ik.md",
+        "01d-panda-cartesian-control.md",
+        "02a-rl-loop.md",
+        "02b-return-value-advantage.md",
+        "02c-policy-distributions.md",
+        "02d-ppo-objective.md",
+        "02e-brax-update-shapes.md",
+        "04a-functional-jax.md",
+        "04b-prng.md",
+        "04c-jit-and-tracing.md",
+        "04d-vmap-scan-pytree.md",
+        "04e-mjx-warp-brax.md",
+    }
+    foundation_dir = COURSE / "foundations"
+    actual = {path.name for path in foundation_dir.glob("*.md")}
+    self.assertTrue(expected.issubset(actual), sorted(expected - actual))
+    for name in expected:
+      text = (foundation_dir / name).read_text(encoding="utf-8")
+      self.assertGreater(len(text), 800, f"micro-lesson too short: {name}")
+      self.assertIn("通过标准", text, name)
+
+  def test_foundation_reference_solutions_run(self) -> None:
+    solution_dir = DOCS / "solutions" / "labs"
+    scripts = (
+        solution_dir / "01_transform_3d_solution.py",
+        solution_dir / "02_advantage_solution.py",
+        solution_dir / "04_jax_transforms_solution.py",
+    )
+    for script in scripts:
+      result = subprocess.run(
+          [sys.executable, str(script)],
+          cwd=ROOT,
+          capture_output=True,
+          text=True,
+          timeout=30,
+      )
+      self.assertEqual(
+          result.returncode,
+          0,
+          f"{script.relative_to(ROOT)} failed:\n{result.stdout}\n{result.stderr}",
+      )
+      self.assertIn("PASS", result.stdout)
 
 
 if __name__ == "__main__":

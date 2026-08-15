@@ -2,6 +2,15 @@
 
 建议时间：10 小时。硬件：Mac 即可。
 
+先按以下微课建立概念，再读本章摘要与项目源码：
+
+1. [`02A 强化学习闭环与 MDP`](foundations/02a-rl-loop.md)（1–1.5h）；
+2. [`02B 回报、价值、优势与 GAE`](foundations/02b-return-value-advantage.md)（1.5–2h）；
+3. [`02C 连续策略与 log-prob`](foundations/02c-policy-distributions.md)（1–1.5h）；
+4. [`02D PPO 裁剪目标`](foundations/02d-ppo-objective.md)（1.5–2h）；
+5. [`02E Brax 更新与 shape`](foundations/02e-brax-update-shapes.md)（1–1.5h）；
+6. 主动实验、reward 源码审计与复盘（2h）。
+
 ## 学习目标
 
 - 把 Panda 任务写成 MDP；
@@ -40,6 +49,10 @@ L^{CLIP}=E[\min(r_t A_t,\; clip(r_t,1-\epsilon,1+\epsilon)A_t)].
 概率比超出 `[0.8, 1.2]` 后目标如何变化。随后把 epsilon 改为 0.3，与本项目
 视觉 PPO 配置一致。
 
+随后补全 [`02_advantage_exercise.py`](../labs/starter/02_advantage_exercise.py)，
+用两步手算验证 return、done mask、GAE 与 clipped objective。最后才对照
+[`参考实现`](../solutions/labs/02_advantage_solution.py)。
+
 ## 源码定位
 
 - `pick_cartesian.py::step`：dense、sparse、progress reward 与 done；
@@ -57,9 +70,12 @@ L^{CLIP}=E[\min(r_t A_t,\; clip(r_t,1-\epsilon,1+\epsilon)A_t)].
 ```bash
 source .venv/bin/activate
 python docs/labs/02_ppo_clipping.py
-rg -n "reward_scaling|clipping_epsilon|discounting|entropy_cost" \
-  mujoco_playground/config/manipulation_params.py
+python docs/labs/starter/02_advantage_exercise.py
+rg -n "reward_scaling|clipping_epsilon|discounting|entropy_cost" mujoco_playground/config/manipulation_params.py
 ```
+
+若没有 `rg`，使用 `grep -RIn "clipping_epsilon\|discounting"`
+加同一文件路径。
 
 ## 预期结果
 
@@ -72,6 +88,9 @@ rg -n "reward_scaling|clipping_epsilon|discounting|entropy_cost" \
 - 把 value network 当作部署时必需的控制器；
 - 用训练评估种子反复挑 checkpoint 后仍称其为 held-out；
 - 奖励上升就声称抓取成功，不检查 `reward/success` 和视频。
+- 仅凭 config 中存在 reward scale 就断定它生效；必须审计 `step` 中构造 scaled
+  reward dict 的顺序。本版本源码里 `no_box_collision` 在该 dict 构造后才加入
+  raw mapping，因此配置名存在不等于它已进入当步总 reward。
 
 ## 修改练习
 

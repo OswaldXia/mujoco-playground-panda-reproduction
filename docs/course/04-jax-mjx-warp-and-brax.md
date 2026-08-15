@@ -2,6 +2,15 @@
 
 建议时间：12 小时。硬件：前半 Mac，GPU 部分只读或在服务器运行。
 
+按以下微课逐层学习，不需要第一遍就读懂训练入口全部实现：
+
+1. [`04A 函数式 JAX`](foundations/04a-functional-jax.md)（1–1.5h）；
+2. [`04B 显式 PRNG`](foundations/04b-prng.md)（0.75–1h）；
+3. [`04C JIT 与 tracing`](foundations/04c-jit-and-tracing.md)（1–1.5h）；
+4. [`04D vmap、scan 与 PyTree`](foundations/04d-vmap-scan-pytree.md)（1.5h）；
+5. [`04E MuJoCo/MJX/Warp/Brax 边界`](foundations/04e-mjx-warp-brax.md)（1–1.5h）；
+6. 演示、starter、源码 shape 追踪与复盘（4–5h）。
+
 ## 学习目标
 
 - 理解纯函数、不可变数组、显式 PRNG key；
@@ -42,6 +51,11 @@ flowchart LR
 在项目 `.venv` 运行 [`labs/04_jax_batching.py`](../labs/04_jax_batching.py)。
 比较 Python 循环、`vmap`、`jit(vmap(...))`，并故意复用一次 key 观察重复随机数。
 
+再补全
+[`04_jax_transforms_exercise.py`](../labs/starter/04_jax_transforms_exercise.py)，
+分别实现 batch、时间 scan 与独立 key；最后才对照
+[`参考实现`](../solutions/labs/04_jax_transforms_solution.py)。
+
 ## 源码定位
 
 - `mjx_env.py::step`：`lax.scan` 执行物理子步；
@@ -61,6 +75,7 @@ flowchart LR
 ```bash
 source .venv/bin/activate
 python docs/labs/04_jax_batching.py
+python docs/labs/starter/04_jax_transforms_exercise.py
 python -c "import jax; print(jax.default_backend(), jax.devices())"
 ```
 

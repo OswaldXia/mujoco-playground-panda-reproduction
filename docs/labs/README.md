@@ -12,5 +12,18 @@
 | `05_panda_inspect.py` | 项目完整环境 | CPU | Panda 数据流 |
 | `09_wilson_interval.py` | 标准库 | CPU | 二项成功率区间 |
 
+## 主动练习
+
+[`starter/`](starter/README.md) 中的文件故意保留 TODO：
+
+| Starter | 依赖 | 训练技能 |
+| --- | --- | --- |
+| `01_transform_3d_exercise.py` | NumPy | 三维变换、组合、逆变换 |
+| `02_advantage_exercise.py` | NumPy | return、done mask、GAE、PPO |
+| `04_jax_transforms_exercise.py` | JAX | vmap、scan、PRNG key |
+
+先运行已完成的最小演示，再补全对应 starter。卡住时按 Level 1→3 提示；最后才
+查看 [`solutions/labs/`](../solutions/labs/)。
+
 建议在项目 `.venv` 中运行。前两个和 Wilson lab 可用普通 Python 环境运行，
 但统一环境能减少版本歧义。每次先写预测，再执行并解释与预测不一致之处。

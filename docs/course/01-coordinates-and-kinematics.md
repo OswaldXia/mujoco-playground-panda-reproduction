@@ -2,6 +2,14 @@
 
 建议时间：8 小时。硬件：Mac 即可。
 
+本章不是一次读完的摘要。按顺序完成四节微课，每节都先做“暂停并预测”：
+
+1. [`01A 向量、点与坐标系`](foundations/01a-vectors-and-frames.md)（1–1.5h）；
+2. [`01B 齐次变换与组合`](foundations/01b-homogeneous-transforms.md)（1.5h）；
+3. [`01C FK、雅可比与 IK`](foundations/01c-fk-ik.md)（1.5–2h）；
+4. [`01D Panda 笛卡尔控制`](foundations/01d-panda-cartesian-control.md)（1–1.5h）；
+5. starter 实验、源码审计与复盘（2h）。
+
 ## 学习目标
 
 - 理解世界、机器人基座、末端、相机和物体坐标系；
@@ -39,6 +47,11 @@
 运行 [`labs/01_transform_2d.py`](../labs/01_transform_2d.py)。先手算一个点旋转
 90°再平移的结果，再让脚本比较“先旋转后平移”和“先平移后旋转”。
 
+演示通过后，补全
+[`01_transform_3d_exercise.py`](../labs/starter/01_transform_3d_exercise.py)。starter
+失败是预期起点；按分级提示完成，最后才看
+[`参考实现`](../solutions/labs/01_transform_3d_solution.py)。
+
 ## 源码定位
 
 - `pick_cartesian.py::_post_init`：从关节控制计算初始末端变换；
@@ -56,9 +69,12 @@
 ```bash
 source .venv/bin/activate
 python docs/labs/01_transform_2d.py
-rg -n "increment|action_scale|compute_franka_ik|new_tip_pos" \
-  mujoco_playground/_src/manipulation/franka_emika_panda/pick_cartesian.py
+python docs/labs/starter/01_transform_3d_exercise.py
+rg -n "increment|action_scale|compute_franka_ik|new_tip_pos" mujoco_playground/_src/manipulation/franka_emika_panda/pick_cartesian.py
 ```
+
+若没有 `rg`，将最后一条替换为 `grep -RIn "action_scale\|compute_franka_ik"`
+加同一文件路径。
 
 ## 预期结果
 
