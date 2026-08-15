@@ -8,6 +8,7 @@ mujoco_menagerie
 checkpoints/
 logs
 .mujoco_playground_asset_cache/
+.ipynb_checkpoints/
 
 # Keep compact, curated reproduction evidence even when a global Git ignore
 # rule excludes generic results/ directories.

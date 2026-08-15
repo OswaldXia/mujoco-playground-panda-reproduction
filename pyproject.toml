@@ -51,6 +51,9 @@ test = [
 notebooks = [
     "matplotlib",
     "jupyter",
+    "ipykernel",
+    "nbclient",
+    "nbformat",
 ]
 dev = [
     "playground[test]",
