@@ -55,7 +55,8 @@ L^{CLIP}=E[\min(r_t A_t,\; clip(r_t,1-\epsilon,1+\epsilon)A_t)].
 ## 操作
 
 ```bash
-python3 docs/labs/02_ppo_clipping.py
+source .venv/bin/activate
+python docs/labs/02_ppo_clipping.py
 rg -n "reward_scaling|clipping_epsilon|discounting|entropy_cost" \
   mujoco_playground/config/manipulation_params.py
 ```

@@ -90,10 +90,12 @@ v0.9 已具备完整路径、真实命令、实验题、答案、故障排查和
 ## 使用方法
 
 1. 新建学习分支：`git switch -c learn/panda-course`。
-2. 顺序完成章节，不跳过 Gate；把答案写入自己的 `notes/`。
-3. 运行相应 lab，并保存小型输出；不要提交 `.venv`、checkpoint 或视频。
-4. 对照 [`exercises/`](../exercises/README.md) 自测，再查看
+2. 若当前 checkout 没有 `.venv`，先执行第 06 章“操作”中的创建与安装命令，
+   安装完成后返回第 00 章；Mac/Linux 必须各自在本机创建。
+3. 顺序完成章节，不跳过 Gate；把答案写入自己的 `notes/`。
+4. 运行相应 lab，并保存小型输出；不要提交 `.venv`、checkpoint 或视频。
+5. 对照 [`exercises/`](../exercises/README.md) 自测，再查看
    [`solutions/`](../solutions/README.md)。
-5. 遇到问题先查 [`troubleshooting.md`](../reference/troubleshooting.md)。
+6. 遇到问题先查 [`troubleshooting.md`](../reference/troubleshooting.md)。
 
 下一步：[`00 项目地图与复现契约`](00-project-map.md)。

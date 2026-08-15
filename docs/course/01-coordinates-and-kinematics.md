@@ -54,7 +54,8 @@
 ## 操作
 
 ```bash
-python3 docs/labs/01_transform_2d.py
+source .venv/bin/activate
+python docs/labs/01_transform_2d.py
 rg -n "increment|action_scale|compute_franka_ik|new_tip_pos" \
   mujoco_playground/_src/manipulation/franka_emika_panda/pick_cartesian.py
 ```
