@@ -65,6 +65,8 @@ def validate_structure(path: Path) -> list[str]:
     errors.append("no executable self-check assertion found")
 
   for index, cell in enumerate(notebook.get("cells", [])):
+    if not cell.get("id"):
+      errors.append(f"cell {index} has no stable nbformat id")
     if cell.get("cell_type") != "code":
       continue
     if cell.get("execution_count") is not None:
