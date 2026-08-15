@@ -58,10 +58,31 @@ class CourseMaterialsTest(unittest.TestCase):
   def test_course_release_status_is_honest(self) -> None:
     readme = (COURSE / "README.md").read_text(encoding="utf-8")
     status = (COURSE / "CURRICULUM_STATUS.md").read_text(encoding="utf-8")
-    self.assertIn("v0.9", readme)
-    self.assertIn("v0.9", status)
+    self.assertIn("v0.9.1", readme)
+    self.assertIn("v0.9.1", status)
     self.assertIn("checkpoint", status)
     self.assertIn("clean-clone", status)
+
+  def test_fresh_environment_entry_materials_exist(self) -> None:
+    required = (
+        COURSE / "START_HERE.md",
+        DOCS / "labs" / "00_course_preflight.py",
+        DOCS / "templates" / "reproduction-contract.md",
+        DOCS / "templates" / "source-audit.md",
+        DOCS / "templates" / "experiment-record.md",
+        DOCS / "templates" / "evaluation-conclusion.md",
+    )
+    self.assertFalse(
+        [str(path.relative_to(ROOT)) for path in required if not path.is_file()]
+    )
+
+  def test_documented_default_tests_need_no_pytest_extra(self) -> None:
+    offenders = []
+    for document in DOCS.rglob("*.md"):
+      text = document.read_text(encoding="utf-8")
+      if "pytest reproduction/tests" in text:
+        offenders.append(str(document.relative_to(ROOT)))
+    self.assertFalse(offenders, f"pytest-only test commands: {offenders}")
 
 
 if __name__ == "__main__":

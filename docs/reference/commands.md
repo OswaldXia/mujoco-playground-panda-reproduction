@@ -79,11 +79,15 @@ tensorboard --logdir reproduction/artifacts/panda-vision-finetune/runs
 
 ```bash
 source .venv/bin/activate
+python docs/labs/00_course_preflight.py
 python docs/labs/01_transform_2d.py
 python docs/labs/02_ppo_clipping.py --epsilon 0.3
 python docs/labs/09_wilson_interval.py
 python docs/labs/03_mujoco_state.py
 python docs/labs/04_jax_batching.py
 python docs/labs/05_panda_inspect.py
-python -m pytest reproduction/tests -q
+python -m unittest discover -s reproduction/tests -p 'test_*.py' -v
 ```
+
+源码搜索首选 `rg -n "关键词" 目录`；macOS 未安装 `rg` 时可使用系统自带的
+`grep -RIn "关键词" 目录`，或通过 Homebrew 安装 ripgrep。

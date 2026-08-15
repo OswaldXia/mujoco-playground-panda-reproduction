@@ -4,6 +4,7 @@
 
 | Lab | 依赖 | 设备 | 对应章节 |
 | --- | --- | --- | --- |
+| `00_course_preflight.py` | 标准库 | CPU | 课程入口与路线选择 |
 | `01_transform_2d.py` | NumPy | CPU | 坐标变换 |
 | `02_ppo_clipping.py` | NumPy | CPU | PPO 裁剪 |
 | `03_mujoco_state.py` | MuJoCo | CPU | 模型与状态 |

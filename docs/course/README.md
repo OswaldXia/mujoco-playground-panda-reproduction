@@ -1,8 +1,8 @@
 # Panda 视觉强化学习：从原理到可复现实验
 
-> 课程版本：v0.9（可试学）  
+> 课程版本：v0.9.1（易学性改进版）
 > 对应代码基线：上游 `4db186a5`，本课程分支
-> `docs/panda-vision-rl-course`  
+> `docs/course-v0.9.1-usability`
 > 预计投入：90–110 小时，建议 8–12 周
 
 这不是一份“照抄命令即可完成”的安装说明，而是一条从机器人与强化学习
@@ -12,6 +12,9 @@
 
 快速执行请继续使用 [`reproduction/README.md`](../../reproduction/README.md)；
 本课程解释每一步为什么存在、如何验证、失败后如何定位。
+
+第一次使用请先打开 **[`START_HERE.md`](START_HERE.md)**，运行零依赖预检并选择
+Mac 基础、离线分析或 Linux GPU 路线。
 
 ## 开始前应已掌握
 
@@ -56,7 +59,7 @@ flowchart LR
 | 06 | Mac 本地验证 | 5h | manifest 与 smoke 结果 |
 | 07 | GPU 训练与资源管理 | 10h | smoke/full 训练记录 |
 | 08 | checkpoint 与 fine-tune | 6h | 选择依据和归档校验 |
-| 09 | 独立评估与统计 | 8h | 1,024 回合评估报告 |
+| 09 | 独立评估与统计 | 8h | 离线练习或 1,024 回合正式报告 |
 | 10 | 失败分析与鲁棒性 | 10h | 位置图和失败分类 |
 | 11 | 评估完整性 | 5h | guide-state 审计报告 |
 | 12 | 毕业实验 | 12–20h | 单变量实验报告 |
@@ -81,21 +84,24 @@ flowchart LR
 
 ## 版本状态
 
-v0.9 已具备完整路径、真实命令、实验题、答案、故障排查和本项目的机器可读
+v0.9.1 已具备分路线入口、环境预检、完整路径、真实命令、实验题、答案、故障
+排查和本项目的机器可读
 证据。升为 v1.0 前仍需：公开或可访问的 checkpoint 及 SHA-256、精选代表性
 回放、一次 clean-clone 全流程验证、至少一名新学习者试学，以及第 12 章参考
-实验结果。详见 [`CURRICULUM_STATUS.md`](CURRICULUM_STATUS.md)。这些缺口不会
-阻止现在开始第 00–11 章。
+实验结果。详见 [`CURRICULUM_STATUS.md`](CURRICULUM_STATUS.md)。缺少 checkpoint
+不阻止第 00–06 章和第 09–11 章的离线练习，但会阻止正式 GPU 复现与正式性能
+结论；课程会明确标注这条边界。
 
 ## 使用方法
 
-1. 新建学习分支：`git switch -c learn/panda-course`。
-2. 若当前 checkout 没有 `.venv`，先执行第 06 章“操作”中的创建与安装命令，
+1. 从 [`START_HERE.md`](START_HERE.md) 运行预检并确认路线。
+2. 新建学习分支：`git switch -c learn/panda-course`。
+3. 若当前 checkout 没有 `.venv`，先执行第 06 章“操作”中的创建与安装命令，
    安装完成后返回第 00 章；Mac/Linux 必须各自在本机创建。
-3. 顺序完成章节，不跳过 Gate；把答案写入自己的 `notes/`。
-4. 运行相应 lab，并保存小型输出；不要提交 `.venv`、checkpoint 或视频。
-5. 对照 [`exercises/`](../exercises/README.md) 自测，再查看
+4. 顺序完成章节，不跳过 Gate；把答案写入自己的 `notes/`。
+5. 运行相应 lab，并保存小型输出；不要提交 `.venv`、checkpoint 或视频。
+6. 对照 [`exercises/`](../exercises/README.md) 自测，再查看
    [`solutions/`](../solutions/README.md)。
-6. 遇到问题先查 [`troubleshooting.md`](../reference/troubleshooting.md)。
+7. 遇到问题先查 [`troubleshooting.md`](../reference/troubleshooting.md)。
 
-下一步：[`00 项目地图与复现契约`](00-project-map.md)。
+下一步：[`从这里开始`](START_HERE.md)。

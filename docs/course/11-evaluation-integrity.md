@@ -64,9 +64,11 @@ autoreset；筛除后的样本也不再是预定义评估分布。
 ## 操作
 
 ```bash
-python3 -m pytest reproduction/tests -q
-rg -n "guide_swap_probability" \
-  mujoco_playground learning reproduction
+python -m unittest discover -s reproduction/tests -p 'test_*.py' -v
+
+# 首选；若没有 rg，使用下一条 grep 命令。
+rg -n "guide_swap_probability" mujoco_playground learning reproduction
+grep -RIn "guide_swap_probability" mujoco_playground learning reproduction
 ```
 
 随后在 GPU 上用第 10 章命令重新采集，不复用旧 report。

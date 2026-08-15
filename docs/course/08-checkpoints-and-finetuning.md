@@ -31,6 +31,17 @@ checkpoint 选择集、训练集和最终 held-out 评估应隔离。反复查�
 不启动训练，先运行 checkpoint 选择器读取已有 full summary，手工核对选中步。
 若服务器上没有本项目产物，阅读已提交结果并在纸面完成选择。
 
+只运行选择器（不会启动训练）：
+
+```bash
+python reproduction/select_best_checkpoint.py \
+  --summary /absolute/path/to/training-summary.json \
+  --runs-dir /absolute/path/to/panda-vision-full/runs
+```
+
+先用 `find reproduction/artifacts -name 'training-summary.json' -print` 定位 summary。
+选择器输出 step、success、reward 与 checkpoint 路径；确认后才进入下面的训练操作。
+
 ## 源码定位
 
 - [`select_best_checkpoint.py`](../../reproduction/select_best_checkpoint.py)；
