@@ -67,10 +67,10 @@ profile on a MacBook Air with an Apple M1 and 16 GB of memory.
 | Adaptive 10M visual PPO run | Completed on RTX 2080 Ti; best success 3/64 |
 | Initial full-run replay videos | Completed; no visible successful lift |
 | Best-checkpoint fine-tuning | Completed; final success 62/64 (96.875%) |
-| Independent held-out evaluation | Historical 990/1,024; guide-free confirmation pending |
+| Independent held-out evaluation | Historical 990/1,024; guide-state caveat documented |
 | Position-stratified evaluation | Historical result identified a left-side weakness |
 | Targeted robustness 100k smoke | Passed; checkpoint restore, updates, and 3 evaluations completed |
-| Targeted robustness experiment | Historical partial result; guide-free confirmation pending |
+| Targeted robustness experiment | Guide-free left confirmation: 964/1,024; 95% gate missed by 9 |
 
 Machine-readable evidence is committed in
 [`macos-state-smoke.json`](reproduction/results/macos-state-smoke.json) and
@@ -84,6 +84,8 @@ The final controlled comparison is in
 [`linux-targeted-robustness-evaluation.json`](reproduction/results/linux-targeted-robustness-evaluation.json).
 The trajectory-stage and evaluation-integrity finding is in
 [`linux-trajectory-failure-analysis.json`](reproduction/results/linux-trajectory-failure-analysis.json).
+The corrected guide-free left-side result is in
+[`linux-guide-free-left-trajectory-analysis.json`](reproduction/results/linux-guide-free-left-trajectory-analysis.json).
 
 The historical held-out evaluation used four seeds and 256 episodes per seed
 and succeeded in 990 of 1,024 episodes (`96.68%`). Subsequent trajectory
@@ -92,6 +94,13 @@ also active during evaluation. Those results remain reproducible development
 evidence, but guide-free schema-version-4 confirmation is required before they
 are treated as formal acceptance. None of these simulation figures are evidence
 of real-robot transfer.
+
+The schema-version-4 guide-free left-side evaluation is complete: the targeted
+checkpoint reached 964/1,024 (`94.14%`) with a worst-seed rate of `91.80%`.
+It passed the seed safeguard but missed the fixed 95% aggregate gate by nine
+successes. Trajectory classification attributes 55 of 60 failures to
+`reached_no_lift`; the next experiment therefore targets post-contact lifting
+stability rather than changing spatial sampling again.
 
 ## Reproducibility decisions
 

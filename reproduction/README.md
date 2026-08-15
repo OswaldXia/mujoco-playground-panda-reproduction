@@ -307,6 +307,17 @@ and failed grasp acquisition to be compared directly.
 Use the dominant class to choose one controlled intervention; do not combine
 multiple reward, sampling, and policy changes in the first follow-up run.
 
+The corrected run is now complete. With `guide_swap_probability=0.0`, the
+robustness checkpoint achieved 964/1,024 left-side successes (`94.14%`, Wilson
+95% CI `92.53%`-`95.42%`) and a worst-seed rate of `91.80%`. The per-seed
+safeguard passed, but the aggregate 95% gate was missed by nine successes.
+Of the 60 failures, 55 (`91.67%`) reached the cube but never lifted it. Every
+successful and failed trajectory acquired bilateral finger contact, so adding
+a generic contact bonus would not distinguish the outcomes. The next isolated
+hypothesis is post-contact reach-to-lift stability, tested on a new
+`experiment/reach-to-lift-stability` branch. Compact evidence is committed at
+`reproduction/results/linux-guide-free-left-trajectory-analysis.json`.
+
 To evaluate a particular checkpoint or reduce memory use:
 
 ```bash

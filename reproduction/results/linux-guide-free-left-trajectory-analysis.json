@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-08-03T15:31:27.803890+00:00",
+  "environment": "PandaPickCubeCartesian",
+  "checkpoint_step": 2007040,
+  "source_branch": "analysis/guide-free-grasp-diagnostics",
+  "source_commit": "1e96566a277e21590e0e1b33e05bcd19cdf59cbe",
+  "protocol": {
+    "report_schema_version": 4,
+    "status": "guide_free_formal_evaluation",
+    "guide_swap_probability": 0.0,
+    "deterministic_policy": true,
+    "initial_y_range": [-0.05, -0.02],
+    "held_out_seeds": [101, 202, 303, 404],
+    "episodes_per_seed": 256,
+    "episodes": 1024
+  },
+  "aggregate": {
+    "successes": 964,
+    "failures": 60,
+    "success_rate": 0.94140625,
+    "success_rate_wilson_95": [0.9253038995713028, 0.9542091734246192],
+    "worst_seed_success_rate": 0.91796875,
+    "mean_reward": 9.987140655517578,
+    "std_reward": 1.81314218044281
+  },
+  "per_seed": [
+    {"seed": 101, "successes": 235, "episodes": 256, "success_rate": 0.91796875},
+    {"seed": 202, "successes": 242, "episodes": 256, "success_rate": 0.9453125},
+    {"seed": 303, "successes": 245, "episodes": 256, "success_rate": 0.95703125},
+    {"seed": 404, "successes": 242, "episodes": 256, "success_rate": 0.9453125}
+  ],
+  "acceptance": {
+    "target_success_rate": 0.95,
+    "minimum_seed_success_rate": 0.9,
+    "aggregate_passed": false,
+    "worst_seed_passed": true,
+    "additional_successes_needed_for_aggregate_target": 9,
+    "overall_passed": false
+  },
+  "failure_classification": {
+    "dominant_class": "reached_no_lift",
+    "counts": {
+      "out_of_bounds_or_invalid": 0,
+      "never_approached": 0,
+      "approached_not_reached": 0,
+      "reached_no_lift": 55,
+      "lifted_then_dropped": 4,
+      "lifted_timeout": 1
+    },
+    "reached_no_lift_share_of_failures": 0.9166666666666666
+  },
+  "grasp_acquisition_comparison": {
+    "success": {
+      "episodes": 964,
+      "mean_reward": 10.2795648540204,
+      "lifted_rate": 1.0,
+      "ever_bilateral_contact_rate": 1.0,
+      "bilateral_contact_at_reach_rate": 0.3329875518672199,
+      "close_command_at_reach_rate": 0.8236514522821576,
+      "mean_close_command_fraction_until_reach": 0.31034701215935323,
+      "mean_gripper_aperture_at_reach": 0.04498807133341602,
+      "mean_reach_to_lift_steps": 40.78526970954357
+    },
+    "failure": {
+      "episodes": 60,
+      "mean_reward": 5.288858358065287,
+      "lifted_rate": 0.08333333333333333,
+      "ever_bilateral_contact_rate": 1.0,
+      "bilateral_contact_at_reach_rate": 0.4,
+      "close_command_at_reach_rate": 0.9166666666666666,
+      "mean_close_command_fraction_until_reach": 0.2947765906932574,
+      "mean_gripper_aperture_at_reach": 0.04323557149618864,
+      "mean_reach_to_lift_steps_when_lifted": 92.8,
+      "episodes_with_lift_latency": 5
+    }
+  },
+  "interpretation": {
+    "evaluation_integrity": "No guide-state episodes were injected during formal evaluation.",
+    "finding": "Successful and failed episodes all acquired bilateral contact, while 55 of 60 failures reached the cube but never lifted it. The next controlled experiment should target post-contact reach-to-lift stability rather than approach or contact acquisition.",
+    "next_branch": "experiment/reach-to-lift-stability",
+    "proposed_single_intervention": "Add a bilateral-contact-gated continuous lift-progress reward and keep checkpoint, sampling, PPO settings, evaluation seeds, and acceptance gates fixed."
+  }
+}

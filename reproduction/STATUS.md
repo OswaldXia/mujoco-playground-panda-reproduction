@@ -29,7 +29,7 @@
 - [x] Targeted robustness experiment completed
 - [x] Trajectory-level failure-classification tooling implemented
 - [x] Guide-state evaluation leakage identified and disabled in formal tools
-- [ ] Corrected guide-free left-side trajectory dataset collected
+- [x] Corrected guide-free left-side trajectory dataset collected
 - [ ] All targeted robustness acceptance criteria passed
 
 ## macOS state-smoke result (2026-08-02)
@@ -204,9 +204,20 @@ The launcher now distinguishes the guarded exact `official` mode from the
 - Failure classes: invalid/out-of-bounds, never approached, approached but not
   reached, reached but not lifted, lifted then dropped, and lifted timeout
 - Focused runner: `./reproduction/evaluate_panda_failure_modes_gpu.sh`
-- Next decision: rerun 1,024 guide-free left-side episodes, compare grasp
-  acquisition between success and failure, then choose one intervention before
-  any new fine-tuning run
+- Guide-free schema-version-4 result: 964/1,024 (`94.14%`), Wilson 95% CI
+  `92.53%`-`95.42%`; worst seed `91.80%`
+- Acceptance: all per-seed safeguards passed, but the aggregate 95% target was
+  missed by nine successes; the pre-registered overall result remains FAIL
+- Failure mechanism: 55 of 60 failures (`91.67%`) reached the cube but never
+  lifted it; every success and failure episode acquired bilateral finger contact
+- Interpretation: approach and contact acquisition are not the main bottleneck;
+  the next controlled experiment should target post-contact reach-to-lift
+  stability
+- Evidence:
+  `reproduction/results/linux-guide-free-left-trajectory-analysis.json`
+- Proposed next branch: `experiment/reach-to-lift-stability`, changing only a
+  bilateral-contact-gated continuous lift-progress reward while holding the
+  checkpoint, sampling, PPO settings, seeds, and acceptance gates fixed
 
 ## Known hardware boundary
 
