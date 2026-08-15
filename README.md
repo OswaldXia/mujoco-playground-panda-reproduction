@@ -4,7 +4,7 @@
 ![Task](https://img.shields.io/badge/task-PandaPickCubeCartesian-5c6bc0)
 ![Algorithm](https://img.shields.io/badge/algorithm-visual%20PPO-orange)
 ![Apple Silicon](https://img.shields.io/badge/Apple%20M1-smoke%20passed-brightgreen)
-![GPU](https://img.shields.io/badge/NVIDIA%20training-prepared-yellow)
+![GPU](https://img.shields.io/badge/NVIDIA%20training-completed-brightgreen)
 
 A reproducible engineering project for the MuJoCo Playground
 `PandaPickCubeCartesian` visual pick-and-place task. It pins the upstream
@@ -13,11 +13,13 @@ Brax PPO training stack, and provides scripts for the official NVIDIA GPU
 training configuration.
 
 > This repository reports completed and pending stages separately. Local
-> environment validation and the 100k/10M visual PPO runs are complete. The
-> first 10M run learned to approach the cube but did not converge reliably, so
-> the next recorded stage is best-checkpoint fine-tuning.
+> environment validation, 100k/10M visual PPO, fine-tuning, independent
+> evaluation, robustness training, and guide-free trajectory diagnosis are
+> complete. The fixed 95% left-side gate remains unmet; the next proposed work
+> is a separate reach-to-lift stability experiment.
 
-[中文说明](#中文说明) · [Detailed reproduction guide](reproduction/README.md) ·
+[中文说明](#中文说明) · [逐步学习课程](docs/course/README.md) ·
+[Detailed reproduction guide](reproduction/README.md) ·
 [Current status](reproduction/STATUS.md)
 
 ## What is being reproduced?
@@ -217,6 +219,12 @@ the training-time mixture evaluation alone is not sufficient.
 ## Repository layout
 
 ```text
+docs/
+├── course/                      # 00–12 章循序学习路径
+├── labs/                        # 可运行的最小概念实验
+├── exercises/                   # Gate 练习与毕业报告模板
+├── solutions/                   # 关键判断参考答案
+└── reference/                   # 命令、配置、产物、故障与一手资料
 reproduction/
 ├── constraints-2026-08-02.txt   # Tested dependency profile
 ├── smoke_test_macos.py          # State reset, step and render assertions
@@ -254,8 +262,9 @@ reproduction/
 它属于基于像素输入的 PPO 强化学习，而不是模仿学习。目前已经在 M1 MacBook
 Air 上完成状态环境、原生渲染、64×64 RGB 视觉 reset/step 和微型 PPO
 训练栈验证，并已在 Linux NVIDIA GPU 上完成 10 万步 smoke 与适配 11 GiB
-显存的 1,000 万步视觉 PPO。首轮策略尚未稳定收敛，当前流程会从约 501 万步
-的最佳检查点以较低学习率继续训练，而不是从较弱的最终检查点续训。
+显存的 1,000 万步视觉 PPO，并从约 501 万步的最佳检查点完成低学习率继续训练。
+独立评估、左侧鲁棒性训练和无引导轨迹诊断也已完成；当前固定 95% 左侧门槛仍差
+9 次成功，下一项建议是在独立分支检验接触后的稳定抬升奖励。
 
 项目重点不是简单运行官方 Notebook，而是提供可追踪的源码版本、依赖约束、
 硬件能力探针、训练脚本、成功率提取和 Git 关键节点，方便继续完成 GPU 训练，
