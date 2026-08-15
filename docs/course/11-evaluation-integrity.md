@@ -41,6 +41,10 @@ autoreset；筛除后的样本也不再是预定义评估分布。
 
 ## 最小实验
 
+若尚未完成，先运行
+[`10_failure_analysis.ipynb`](../notebooks/10_failure_analysis.ipynb) 的“Guide-state
+完整性审计”部分；它并排展示 schema、status、guide probability 与 step-1 异常。
+
 对比
 [`linux-trajectory-failure-analysis.json`](../../reproduction/results/linux-trajectory-failure-analysis.json)
 与

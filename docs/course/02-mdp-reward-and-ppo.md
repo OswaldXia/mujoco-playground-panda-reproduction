@@ -4,12 +4,13 @@
 
 先按以下微课建立概念，再读本章摘要与项目源码：
 
-1. [`02A 强化学习闭环与 MDP`](foundations/02a-rl-loop.md)（1–1.5h）；
-2. [`02B 回报、价值、优势与 GAE`](foundations/02b-return-value-advantage.md)（1.5–2h）；
-3. [`02C 连续策略与 log-prob`](foundations/02c-policy-distributions.md)（1–1.5h）；
-4. [`02D PPO 裁剪目标`](foundations/02d-ppo-objective.md)（1.5–2h）；
-5. [`02E Brax 更新与 shape`](foundations/02e-brax-update-shapes.md)（1–1.5h）；
-6. 主动实验、reward 源码审计与复盘（2h）。
+1. [`02A 强化学习闭环与 MDP`](foundations/02a-rl-loop.md)（1h）；
+2. [`02B 回报、价值、优势与 GAE`](foundations/02b-return-value-advantage.md)（1.5h）；
+3. [`02C 连续策略与 log-prob`](foundations/02c-policy-distributions.md)（1h）；
+4. [`02D PPO 裁剪目标`](foundations/02d-ppo-objective.md)（1.5h）；
+5. [`Return/GAE/PPO 交互 Notebook`](../notebooks/02_returns_gae_and_ppo.ipynb)（1.5h）；
+6. [`02E Brax 更新与 shape`](foundations/02e-brax-update-shapes.md)（1h）；
+7. 主动实验、reward 源码审计与复盘（2h）。
 
 ## 学习目标
 
@@ -44,6 +45,10 @@ L^{CLIP}=E[\min(r_t A_t,\; clip(r_t,1-\epsilon,1+\epsilon)A_t)].
 减少来回刷分，但意味着日志中的逐步 reward 不是原始各项之和。
 
 ## 最小实验
+
+先完成
+[`02_returns_gae_and_ppo.ipynb`](../notebooks/02_returns_gae_and_ppo.ipynb)。它会逐步
+展示 return、done mask、GAE、log-prob ratio 和正负优势曲线，并要求修改 epsilon。
 
 运行 [`labs/02_ppo_clipping.py`](../labs/02_ppo_clipping.py)，观察正/负优势下，
 概率比超出 `[0.8, 1.2]` 后目标如何变化。随后把 epsilon 改为 0.3，与本项目

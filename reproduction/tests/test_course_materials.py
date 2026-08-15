@@ -61,14 +61,16 @@ class CourseMaterialsTest(unittest.TestCase):
   def test_course_release_status_is_honest(self) -> None:
     readme = (COURSE / "README.md").read_text(encoding="utf-8")
     status = (COURSE / "CURRICULUM_STATUS.md").read_text(encoding="utf-8")
-    self.assertIn("v0.9.1", readme)
-    self.assertIn("v0.9.1", status)
+    self.assertIn("v0.10", readme)
+    self.assertIn("v0.10", status)
     self.assertIn("checkpoint", status)
     self.assertIn("clean-clone", status)
 
   def test_fresh_environment_entry_materials_exist(self) -> None:
     required = (
         COURSE / "START_HERE.md",
+        COURSE / "GATE_RUBRIC.md",
+        COURSE / "NOTEBOOK_DESIGN.md",
         DOCS / "labs" / "00_course_preflight.py",
         DOCS / "templates" / "reproduction-contract.md",
         DOCS / "templates" / "source-audit.md",

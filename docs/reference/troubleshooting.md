@@ -69,3 +69,27 @@
 
 检查 guide probability、step-1 reached、deterministic policy、success 定义、初始
 分布和 autoreset。先做完整性审计，再讨论 reward 或网络。
+
+## Notebook 使用了错误 Python/kernel
+
+症状：第一段代码提示 `Wrong kernel`，或系统 kernel 缺少 JAX/MuJoCo。
+
+1. 关闭当前 Jupyter 服务，不要在页面内临时 `pip install`；
+2. 从仓库根目录运行 `./reproduction/start_course_notebooks.sh --check`；
+3. 检查显示的 `Panda Course (.venv)` kernel；
+4. 再运行 `./reproduction/start_course_notebooks.sh`；
+5. 页面中选择 `Panda Course (.venv)`，执行 Restart Kernel and Run All。
+
+启动器只在 `reproduction/artifacts/jupyter/` 创建临时 kernelspec，不修改用户全局
+kernel。若浏览器没有自动打开，复制终端给出的本地 `http://127.0.0.1...` 链接。
+
+## Notebook 单独运行 cell 正常，Run All 失败
+
+这是隐藏执行顺序依赖。不要通过重复点击“修好”发布源文件：先 Restart Kernel，
+从第一格顺序执行；确认修改练习已恢复文档指定值。发布前运行：
+
+```bash
+.venv/bin/python reproduction/validate_course_notebooks.py
+```
+
+验证器在新 kernel 中顺序执行，但不把运行输出写回 `.ipynb`。

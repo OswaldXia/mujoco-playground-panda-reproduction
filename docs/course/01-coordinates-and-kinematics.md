@@ -4,11 +4,12 @@
 
 本章不是一次读完的摘要。按顺序完成四节微课，每节都先做“暂停并预测”：
 
-1. [`01A 向量、点与坐标系`](foundations/01a-vectors-and-frames.md)（1–1.5h）；
-2. [`01B 齐次变换与组合`](foundations/01b-homogeneous-transforms.md)（1.5h）；
-3. [`01C FK、雅可比与 IK`](foundations/01c-fk-ik.md)（1.5–2h）；
-4. [`01D Panda 笛卡尔控制`](foundations/01d-panda-cartesian-control.md)（1–1.5h）；
-5. starter 实验、源码审计与复盘（2h）。
+1. [`01A 向量、点与坐标系`](foundations/01a-vectors-and-frames.md)（1h）；
+2. [`01B 齐次变换与组合`](foundations/01b-homogeneous-transforms.md)（1h）；
+3. [`坐标系交互 Notebook`](../notebooks/01_frames_and_transforms.ipynb)（1–1.5h）；
+4. [`01C FK、雅可比与 IK`](foundations/01c-fk-ik.md)（1.5h）；
+5. [`01D Panda 笛卡尔控制`](foundations/01d-panda-cartesian-control.md)（1h）；
+6. starter 实验、源码审计与复盘（2h）。
 
 ## 学习目标
 
@@ -44,6 +45,10 @@
 
 ## 最小实验
 
+先通过统一入口打开
+[`01_frames_and_transforms.ipynb`](../notebooks/01_frames_and_transforms.ipynb)，
+完成预测、可视化、自测与反思。Notebook 从空内核可完整执行，但不要跳过纸面预测。
+
 运行 [`labs/01_transform_2d.py`](../labs/01_transform_2d.py)。先手算一个点旋转
 90°再平移的结果，再让脚本比较“先旋转后平移”和“先平移后旋转”。
 
@@ -68,6 +73,7 @@
 
 ```bash
 source .venv/bin/activate
+./reproduction/start_course_notebooks.sh  # 新终端启动；完成后 Ctrl-C 关闭
 python docs/labs/01_transform_2d.py
 python docs/labs/starter/01_transform_3d_exercise.py
 rg -n "increment|action_scale|compute_franka_ik|new_tip_pos" mujoco_playground/_src/manipulation/franka_emika_panda/pick_cartesian.py

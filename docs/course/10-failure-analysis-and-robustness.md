@@ -33,6 +33,10 @@ Fisher exact test 可比较两个二项组，但 p 值不是效应大小；多 b
 
 ## 最小实验
 
+先完成共享的
+[`10_failure_analysis.ipynb`](../notebooks/10_failure_analysis.ipynb)。它按分类守恒、
+事件时间线、接触对照、位置分母与 guide 协议顺序分析，避免从单个视频直接猜 reward。
+
 用已提交 compact JSON 回答：改进前左区、历史鲁棒 checkpoint、guide-free
 确认三者协议是否相同？哪些数字能直接对比，哪些只能作为开发证据？然后从
 60 个失败重算各类占比。

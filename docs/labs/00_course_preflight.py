@@ -22,6 +22,7 @@ CORE_PACKAGES = (
     "warp-lang",
     "playground",
 )
+NOTEBOOK_PACKAGES = ("jupyter", "ipykernel", "nbclient", "nbformat", "matplotlib")
 
 
 def _git(*args: str) -> str | None:
@@ -39,9 +40,9 @@ def _git(*args: str) -> str | None:
   return result.stdout.strip()
 
 
-def _package_versions() -> dict[str, str | None]:
+def _package_versions(packages: tuple[str, ...]) -> dict[str, str | None]:
   versions: dict[str, str | None] = {}
-  for package in CORE_PACKAGES:
+  for package in packages:
     try:
       versions[package] = importlib.metadata.version(package)
     except importlib.metadata.PackageNotFoundError:
@@ -61,7 +62,8 @@ def _find_checkpoints() -> int:
 
 
 def collect() -> dict[str, object]:
-  versions = _package_versions()
+  versions = _package_versions(CORE_PACKAGES)
+  notebook_versions = _package_versions(NOTEBOOK_PACKAGES)
   branch = _git("branch", "--show-current")
   dirty = _git("status", "--porcelain")
   in_venv = sys.prefix != getattr(sys, "base_prefix", sys.prefix)
@@ -81,6 +83,9 @@ def collect() -> dict[str, object]:
       "ripgrep_available": shutil.which("rg") is not None,
       "packages": versions,
       "core_packages_complete": all(versions.values()),
+      "notebook_packages": notebook_versions,
+      "notebook_packages_complete": all(notebook_versions.values()),
+      "notebook_files": len(list((ROOT / "docs" / "notebooks").glob("*.ipynb"))),
       "checkpoint_directories": _find_checkpoints(),
       "nvidia_smi_available": shutil.which("nvidia-smi") is not None,
       "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
@@ -128,8 +133,27 @@ def print_report(report: dict[str, object]) -> None:
   for name, version in dict(report["packages"]).items():
     _line(name, "PASS" if version else "WARN", str(version or "not installed"))
 
+  print("\nInteractive notebooks")
+  for name, version in dict(report["notebook_packages"]).items():
+    _line(name, "PASS" if version else "WARN", str(version or "not installed"))
+  notebook_ready = bool(
+      report["virtual_environment"]
+      and report["notebook_packages_complete"]
+      and report["notebook_files"] == 5
+  )
+  _line(
+      "Notebook course",
+      "PASS" if notebook_ready else "WARN",
+      f"{report['notebook_files']}/5 files; "
+      + ("project kernel ready" if notebook_ready else "install .[notebooks]"),
+  )
+
   print("\nAvailable learning tracks")
-  _line("A / Mac foundations", "PASS", "chapters 00-06 and source labs")
+  _line(
+      "A / Mac foundations",
+      "PASS" if notebook_ready else "WARN",
+      "chapters 00-06, notebooks, and source labs",
+  )
   _line("B / Offline analysis", "PASS", "bundled fixtures; no GPU required")
   gpu_ready = bool(report["nvidia_smi_available"] and report["core_packages_complete"])
   _line(

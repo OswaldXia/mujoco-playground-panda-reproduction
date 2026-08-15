@@ -24,6 +24,12 @@ Notebook 是概念教学层，不是正式训练入口。它们把“先预测�
 启动器会把当前项目 `.venv` 注册为仓库内临时 kernel，并将缓存写到已忽略的
 `reproduction/artifacts/jupyter/`。不要在系统 Python 3.9 kernel 中运行课程。
 
+只检查 kernel、依赖和路径但不启动服务：
+
+```bash
+./reproduction/start_course_notebooks.sh --check
+```
+
 如果只想验证而不打开浏览器：
 
 ```bash

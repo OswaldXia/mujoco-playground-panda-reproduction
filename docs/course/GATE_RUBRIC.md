@@ -9,8 +9,8 @@
 | 等级 | 可观察证据 |
 | --- | --- |
 | NOT READY | 不能独立写出 MDP；混淆像素与世界坐标或 FK/IK |
-| PRACTICED | 三个 starter 之外的 01/02 练习通过，但源码链仍依赖答案 |
-| READY | 三维变换与 advantage starter 通过；能从源码口述 observation→action→IK→reward→done，并提交 source audit |
+| PRACTICED | 01/02 Notebook 自测和演示通过，但 starter 或源码链仍依赖答案 |
+| READY | Notebook 后独立完成三维变换与 advantage starter；能从源码口述 observation→action→IK→reward→done，并提交 source audit |
 
 允许查看文档，不允许照读答案。审阅者随机改变一个 ratio、done 或坐标变换后仍能
 正确推导，才算 READY。
@@ -20,7 +20,7 @@
 | 等级 | 可观察证据 |
 | --- | --- |
 | NOT READY | 把 MuJoCo、Warp、Brax 的职责混在一起；不能预测 batch shape |
-| PRACTICED | JAX 演示与 starter 通过 |
+| PRACTICED | JAX Notebook 与演示通过，但不能独立解释一次 shape 变化 |
 | READY | 能手画 XML→MJX/Warp→RGB→CNN→PPO；正确解释 jit 冷/热计时、vmap/scan/PyTree、显存峰值，并提交 shape audit |
 
 ## Gate 3｜复现
@@ -38,11 +38,14 @@ Mac-only 学习者在 `LOCAL READY` 停留是正确结论，不扣减已掌握�
 | 等级 | 可观察证据 |
 | --- | --- |
 | NOT READY | 只看视频或训练期 64 回合数字 |
-| PRACTICED | 三个 offline lab 通过，能解释精选轨迹不能估计成功率 |
+| PRACTICED | 09/10 Notebook 与三个 offline lab 通过，能解释精选轨迹不能估计成功率 |
 | READY | 自己冻结 checkpoint，按预注册协议运行 4×256；能从 episode records 重算 aggregate/per-seed/Wilson/失败类别；schema、guide 与 SHA-256 齐全 |
 
 没有 checkpoint/GPU 时最多到 PRACTICED。课程自带 compact evidence 只能证明学习者
 会分析，不能证明其复现了策略性能。
+
+Notebook 的 `PASS` 只验证当前示例的计算与执行顺序；它不单独提升任何 Gate 到
+READY。READY 仍要求脱离现成 cell 的实现、源码解释或自己的正式证据。
 
 ## Gate 5｜毕业实验
 

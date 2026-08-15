@@ -92,5 +92,21 @@ python docs/labs/05_panda_inspect.py
 python -m unittest discover -s reproduction/tests -p 'test_*.py' -v
 ```
 
+## 交互式 Notebook
+
+```bash
+./reproduction/start_course_notebooks.sh
+```
+
+不打开浏览器的发布校验：
+
+```bash
+.venv/bin/python reproduction/validate_course_notebooks.py --structure-only
+.venv/bin/python reproduction/validate_course_notebooks.py
+```
+
+第二条会用当前 `.venv` 建立临时 kernel，从空状态顺序运行 5 个 Notebook；不会
+把生成的图或 execution count 写回源文件。
+
 源码搜索首选 `rg -n "关键词" 目录`；macOS 未安装 `rg` 时可使用系统自带的
 `grep -RIn "关键词" 目录`，或通过 Homebrew 安装 ripgrep。

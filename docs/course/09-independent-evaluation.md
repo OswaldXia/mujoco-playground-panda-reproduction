@@ -30,6 +30,11 @@ worst seed，避免平均数掩盖某个随机批次的弱点。
 
 ## 最小实验
 
+先完成
+[`09_evaluation_statistics.ipynb`](../notebooks/09_evaluation_statistics.ipynb)。它读取
+已提交 compact evidence，可视化 per-seed 和样本量对区间宽度的影响，并用断言
+阻止把 8 条精选轨迹误作 50% 成功率样本。
+
 运行 [`labs/09_wilson_interval.py`](../labs/09_wilson_interval.py)，比较 62/64、
 964/1,024 与 990/1,024 的区间。再从 guide-free compact JSON 手算总数和最差
 种子。
@@ -102,7 +107,7 @@ optimizer update，checkpoint 不被覆盖。
 
 ## 通过标准
 
-离线路径：脚本通过、能正确解释区间/门槛/精选样例边界，记为 Gate 4 PRACTICED。
+离线路径：Notebook 与脚本通过、能正确解释区间/门槛/精选样例边界，记为 Gate 4 PRACTICED。
 正式路径：再从自己的原始 episode records 重算聚合与 per-seed，artifact 完整且
 策略无更新，才记为 Gate 4 READY。
 

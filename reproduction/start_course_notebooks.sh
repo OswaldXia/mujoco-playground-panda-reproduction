@@ -18,15 +18,23 @@ fi
 mkdir -p "${RUNTIME_ROOT}/config" "${RUNTIME_ROOT}/ipython" \
   "${RUNTIME_ROOT}/matplotlib" "${KERNEL_PREFIX}"
 
+export JUPYTER_PATH="${KERNEL_PREFIX}/share/jupyter${JUPYTER_PATH:+:${JUPYTER_PATH}}"
+export JUPYTER_CONFIG_DIR="${RUNTIME_ROOT}/config"
+export IPYTHONDIR="${RUNTIME_ROOT}/ipython"
+export MPLCONFIGDIR="${RUNTIME_ROOT}/matplotlib"
+
 "${PYTHON_BIN}" -m ipykernel install \
   --prefix "${KERNEL_PREFIX}" \
   --name python3 \
   --display-name "Panda Course (.venv)" >/dev/null
 
-export JUPYTER_PATH="${KERNEL_PREFIX}/share/jupyter${JUPYTER_PATH:+:${JUPYTER_PATH}}"
-export JUPYTER_CONFIG_DIR="${RUNTIME_ROOT}/config"
-export IPYTHONDIR="${RUNTIME_ROOT}/ipython"
-export MPLCONFIGDIR="${RUNTIME_ROOT}/matplotlib"
+if [[ "${1:-}" == "--check" ]]; then
+  "${PYTHON_BIN}" -c \
+    "import ipykernel, jupyter, matplotlib, nbclient, nbformat; print('[PASS] Notebook packages import successfully')"
+  "${JUPYTER_BIN}" kernelspec list
+  echo "[PASS] Project-local Panda Course kernel is ready."
+  exit 0
+fi
 
 echo ""
 echo "Panda course notebooks"
@@ -40,4 +48,4 @@ echo "  Close Jupyter with Ctrl-C in this terminal."
 echo ""
 
 cd "${REPO_ROOT}"
-exec "${JUPYTER_BIN}" lab docs/notebooks --notebook-dir="${REPO_ROOT}"
+exec "${JUPYTER_BIN}" lab docs/notebooks --notebook-dir="${REPO_ROOT}" "$@"

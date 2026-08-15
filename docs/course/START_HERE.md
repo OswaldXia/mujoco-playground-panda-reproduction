@@ -34,7 +34,7 @@ python3 docs/labs/00_course_preflight.py
 
 | 路线 | 适用情况 | 现在能完成 | 暂时不能证明 |
 | --- | --- | --- | --- |
-| A：Mac 基础路线 | 当前这台 MacBook Air | 第 00–06 章、基础实验、源码审计 | CUDA 吞吐与正式 PPO 训练 |
+| A：Mac 基础路线 | 当前这台 MacBook Air | 第 00–06 章、5 个 Notebook、基础实验、源码审计 | CUDA 吞吐与正式 PPO 训练 |
 | B：离线分析路线 | 没有 GPU/checkpoint | 第 09–11 章的统计、失败分类、完整性练习（Gate 4 PRACTICED） | 自己的正式策略性能与 Gate 4 READY |
 | C：Linux GPU 路线 | NVIDIA Linux 服务器 | 第 07–12 章的训练、正式评估与受控实验 | 无；仍需保留协议与证据 |
 
@@ -46,14 +46,14 @@ python3 docs/labs/00_course_preflight.py
 先确认当前位于课程发布分支，再从它创建学习分支：
 
 ```bash
-git switch docs/course-v0.9.1-usability
-git switch -c learn/panda-course-v0.9.1
+git switch docs/course-v0.10-notebooks
+git switch -c learn/panda-course-v0.10
 mkdir -p notes
 cp docs/templates/reproduction-contract.md notes/00-reproduction-contract.md
 ```
 
-若 `learn/panda-course-v0.9.1` 已存在，只需切回它，不要重复创建。旧的
-`learn/panda-course` 分支会保留 v0.9 起点；不要强制覆盖含有自己笔记的旧分支。
+若 `learn/panda-course-v0.10` 已存在，只需切回它，不要重复创建。旧的
+`learn/panda-course-v0.9.1` 分支会保留旧起点；不要强制覆盖含有自己笔记的分支。
 模板不是标准答案，而是防止遗漏预测、协议、证据和边界。
 
 ## 5. 安装项目环境（第 06 章前需要）
@@ -71,6 +71,15 @@ Mac 与 Linux 必须各自在本机创建 `.venv`，不能复制虚拟环境。�
 2. 填写 `notes/00-reproduction-contract.md`；
 3. 提交该文件；
 4. 再进入 [`01 坐标、姿态与运动学`](01-coordinates-and-kinematics.md)。
+
+进入第 01 章后，用下面的统一入口启动 Notebook：
+
+```bash
+./reproduction/start_course_notebooks.sh
+```
+
+它使用项目 `.venv`，不会把课程交给系统 Python 3.9。关闭服务时回到启动终端按
+`Ctrl-C`。Notebook 不是必需的 GPU 服务，可完全在当前 Mac 上运行。
 
 遇到错误时先查 [`故障排查`](../reference/troubleshooting.md)。若命令使用 `rg`
 但预检提示未安装，可临时把 `rg -n "关键词" 目录` 换成

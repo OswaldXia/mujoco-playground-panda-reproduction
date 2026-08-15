@@ -8,8 +8,9 @@
 2. [`04B 显式 PRNG`](foundations/04b-prng.md)（0.75–1h）；
 3. [`04C JIT 与 tracing`](foundations/04c-jit-and-tracing.md)（1–1.5h）；
 4. [`04D vmap、scan 与 PyTree`](foundations/04d-vmap-scan-pytree.md)（1.5h）；
-5. [`04E MuJoCo/MJX/Warp/Brax 边界`](foundations/04e-mjx-warp-brax.md)（1–1.5h）；
-6. 演示、starter、源码 shape 追踪与复盘（4–5h）。
+5. [`JAX 执行模型交互 Notebook`](../notebooks/04_jax_execution_model.ipynb)（1.5h）；
+6. [`04E MuJoCo/MJX/Warp/Brax 边界`](foundations/04e-mjx-warp-brax.md)（1–1.5h）；
+7. 演示、starter、源码 shape 追踪与复盘（3–4h）。
 
 ## 学习目标
 
@@ -47,6 +48,10 @@ flowchart LR
 ```
 
 ## 最小实验
+
+先完成
+[`04_jax_execution_model.ipynb`](../notebooks/04_jax_execution_model.ipynb)，观察
+PRNG、batch/time shape 和同步计时。Mac 的 CPU backend 是预期结果。
 
 在项目 `.venv` 运行 [`labs/04_jax_batching.py`](../labs/04_jax_batching.py)。
 比较 Python 循环、`vmap`、`jit(vmap(...))`，并故意复用一次 key 观察重复随机数。
