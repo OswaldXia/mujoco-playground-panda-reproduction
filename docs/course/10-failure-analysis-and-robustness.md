@@ -37,6 +37,16 @@ Fisher exact test 可比较两个二项组，但 p 值不是效应大小；多 b
 确认三者协议是否相同？哪些数字能直接对比，哪些只能作为开发证据？然后从
 60 个失败重算各类占比。
 
+Mac 离线路径直接运行：
+
+```bash
+python docs/labs/10_offline_failure_analysis.py
+```
+
+再从 [`精选 episode fixture`](../data/guide-free-left-episodes-fixture.json) 选择一条
+成功与一条 `reached_no_lift`，按 approached→reached→contact→lift→success
+画时间线。记住该 fixture 被有意平衡，不能估计成功率。
+
 ## 源码定位
 
 - [`analyze_panda_evaluation.py`](../../reproduction/analyze_panda_evaluation.py)；
@@ -52,9 +62,12 @@ Fisher exact test 可比较两个二项组，但 p 值不是效应大小；多 b
 
 ## 操作
 
-在服务器采集 guide-free 轨迹：
+先在任意机器完成离线分析；在服务器采集自己的 guide-free 轨迹：
 
 ```bash
+python docs/labs/10_offline_failure_analysis.py
+
+# 以下切换会离开课程分支；先提交当前 notes，并确认目标分支存在。
 git switch analysis/guide-free-grasp-diagnostics
 ./reproduction/evaluate_panda_failure_modes_gpu.sh
 ```

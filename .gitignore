@@ -13,3 +13,7 @@ logs
 # rule excludes generic results/ directories.
 !reproduction/results/
 !reproduction/results/*.json
+
+# Keep the small teaching fixture used by the offline course labs.
+!docs/data/
+!docs/data/*

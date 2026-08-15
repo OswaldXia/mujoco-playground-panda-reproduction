@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "fixture_role": "teaching_only_curated_examples_not_a_rate_sample",
+  "environment": "PandaPickCubeCartesian",
+  "checkpoint_step": 2007040,
+  "protocol": {
+    "status": "guide_free_formal_evaluation",
+    "report_schema_version": 4,
+    "guide_swap_probability": 0.0,
+    "deterministic_policy": true,
+    "initial_y_range": [-0.05, -0.02],
+    "held_out_seeds": [101, 202, 303, 404]
+  },
+  "formal_reference": {
+    "episodes": 1024,
+    "successes": 964,
+    "failures": 60,
+    "success_rate": 0.94140625,
+    "success_rate_wilson_95": [0.9253038995713028, 0.9542091734246192],
+    "per_seed": [
+      {"seed": 101, "episodes": 256, "successes": 235},
+      {"seed": 202, "episodes": 256, "successes": 242},
+      {"seed": 303, "episodes": 256, "successes": 245},
+      {"seed": 404, "episodes": 256, "successes": 242}
+    ],
+    "failure_counts": {
+      "out_of_bounds_or_invalid": 0,
+      "never_approached": 0,
+      "approached_not_reached": 0,
+      "reached_no_lift": 55,
+      "lifted_then_dropped": 4,
+      "lifted_timeout": 1
+    }
+  },
+  "curated_episode_examples": [
+    {
+      "episode_id": "101:0000", "seed": 101, "initial_y": -0.02463500015437603,
+      "success": true, "reward": 7.460781097412109, "episode_length": 79,
+      "failure_class": null, "ever_approached": true, "ever_reached_box": true,
+      "ever_bilateral_contact": true, "ever_lifted": true,
+      "first_reached_step": 25, "first_lift_step": 54, "first_success_step": 79,
+      "max_box_height": 0.14970791339874268
+    },
+    {
+      "episode_id": "101:0004", "seed": 101, "initial_y": -0.03056200034916401,
+      "success": false, "reward": 5.156761169433594, "episode_length": 200,
+      "failure_class": "reached_no_lift", "ever_approached": true,
+      "ever_reached_box": true, "ever_bilateral_contact": true, "ever_lifted": false,
+      "first_reached_step": 25, "first_lift_step": -1, "first_success_step": -1,
+      "max_box_height": 0.04016987606883049
+    },
+    {
+      "episode_id": "202:0000", "seed": 202, "initial_y": -0.034405000507831573,
+      "success": true, "reward": 11.066637992858887, "episode_length": 74,
+      "failure_class": null, "ever_approached": true, "ever_reached_box": true,
+      "ever_bilateral_contact": true, "ever_lifted": true,
+      "first_reached_step": 25, "first_lift_step": 52, "first_success_step": 74,
+      "max_box_height": 0.14955519139766693
+    },
+    {
+      "episode_id": "202:0029", "seed": 202, "initial_y": -0.04436900094151497,
+      "success": false, "reward": 5.077920913696289, "episode_length": 200,
+      "failure_class": "reached_no_lift", "ever_approached": true,
+      "ever_reached_box": true, "ever_bilateral_contact": true, "ever_lifted": false,
+      "first_reached_step": 25, "first_lift_step": -1, "first_success_step": -1,
+      "max_box_height": 0.04016987606883049
+    },
+    {
+      "episode_id": "303:0000", "seed": 303, "initial_y": -0.020934000611305237,
+      "success": true, "reward": 11.07507610321045, "episode_length": 105,
+      "failure_class": null, "ever_approached": true, "ever_reached_box": true,
+      "ever_bilateral_contact": true, "ever_lifted": true,
+      "first_reached_step": 25, "first_lift_step": 83, "first_success_step": 105,
+      "max_box_height": 0.1474854052066803
+    },
+    {
+      "episode_id": "303:0016", "seed": 303, "initial_y": -0.024343999102711678,
+      "success": false, "reward": 5.195868492126465, "episode_length": 200,
+      "failure_class": "reached_no_lift", "ever_approached": true,
+      "ever_reached_box": true, "ever_bilateral_contact": true, "ever_lifted": false,
+      "first_reached_step": 25, "first_lift_step": -1, "first_success_step": -1,
+      "max_box_height": 0.04218669235706329
+    },
+    {
+      "episode_id": "404:0000", "seed": 404, "initial_y": -0.04445299878716469,
+      "success": true, "reward": 8.718130111694336, "episode_length": 74,
+      "failure_class": null, "ever_approached": true, "ever_reached_box": true,
+      "ever_bilateral_contact": true, "ever_lifted": true,
+      "first_reached_step": 25, "first_lift_step": 52, "first_success_step": 74,
+      "max_box_height": 0.14660169184207916
+    },
+    {
+      "episode_id": "404:0016", "seed": 404, "initial_y": -0.046852998435497284,
+      "success": false, "reward": 5.326016902923584, "episode_length": 200,
+      "failure_class": "reached_no_lift", "ever_approached": true,
+      "ever_reached_box": true, "ever_bilateral_contact": true, "ever_lifted": false,
+      "first_reached_step": 26, "first_lift_step": -1, "first_success_step": -1,
+      "max_box_height": 0.041195064783096313
+    }
+  ],
+  "source": {
+    "raw_report_filename": "left-trajectory.json",
+    "raw_report_sha256": "13a98c7f6b195fe19b1bdc8319104afc83a970366d03284a0936d40e15305f5a",
+    "selection": "first success and first failure in each held-out seed"
+  }
+}

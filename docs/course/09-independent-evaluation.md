@@ -2,6 +2,10 @@
 
 建议时间：8 小时。硬件：Linux NVIDIA GPU；统计 lab 可在 Mac 运行。
 
+本章有两条明确路径：Mac/无 checkpoint 先完成“离线路径”，得到 Gate 4
+`PRACTICED`；只有在 GPU 上对自己的冻结 checkpoint 采集完整记录，才能得到
+`READY`。评分边界见 [`GATE_RUBRIC.md`](GATE_RUBRIC.md)。
+
 ## 学习目标
 
 - 恢复冻结策略进行 inference-only 评估；
@@ -30,6 +34,16 @@ worst seed，避免平均数掩盖某个随机批次的弱点。
 964/1,024 与 990/1,024 的区间。再从 guide-free compact JSON 手算总数和最差
 种子。
 
+无需 GPU 的完整练习：
+
+```bash
+python docs/labs/09_offline_evaluation.py
+```
+
+脚本从已提交 compact evidence 重算 aggregate、分 seed、Wilson 与固定门槛。随后
+打开 [`课程数据说明`](../data/README.md)，解释为何 8 条精选 episode 不能计算
+正式成功率。
+
 ## 源码定位
 
 - [`evaluate_panda_gpu.sh`](../../reproduction/evaluate_panda_gpu.sh)；
@@ -45,7 +59,10 @@ worst seed，避免平均数掩盖某个随机批次的弱点。
 ## 操作
 
 ```bash
-python3 docs/labs/09_wilson_interval.py
+python docs/labs/09_wilson_interval.py
+python docs/labs/09_offline_evaluation.py
+
+# 以下仅在 Linux NVIDIA 服务器、且已有 checkpoint 时运行。
 ./reproduction/evaluate_panda_gpu.sh
 ```
 
@@ -85,8 +102,9 @@ optimizer update，checkpoint 不被覆盖。
 
 ## 通过标准
 
-能从原始 episode records 重算聚合与 per-seed；能正确解释区间与门槛；正式
-评估 artifact 完整且策略无更新。至此通过 Gate 4。
+离线路径：脚本通过、能正确解释区间/门槛/精选样例边界，记为 Gate 4 PRACTICED。
+正式路径：再从自己的原始 episode records 重算聚合与 per-seed，artifact 完整且
+策略无更新，才记为 Gate 4 READY。
 
 ## Git 节点
 

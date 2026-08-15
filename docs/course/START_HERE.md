@@ -35,7 +35,7 @@ python3 docs/labs/00_course_preflight.py
 | 路线 | 适用情况 | 现在能完成 | 暂时不能证明 |
 | --- | --- | --- | --- |
 | A：Mac 基础路线 | 当前这台 MacBook Air | 第 00–06 章、基础实验、源码审计 | CUDA 吞吐与正式 PPO 训练 |
-| B：离线分析路线 | 没有 GPU/checkpoint | 第 09–11 章的统计、失败分类、完整性练习 | 自己的正式策略性能 |
+| B：离线分析路线 | 没有 GPU/checkpoint | 第 09–11 章的统计、失败分类、完整性练习（Gate 4 PRACTICED） | 自己的正式策略性能与 Gate 4 READY |
 | C：Linux GPU 路线 | NVIDIA Linux 服务器 | 第 07–12 章的训练、正式评估与受控实验 | 无；仍需保留协议与证据 |
 
 路线不是互斥的。推荐顺序为 A → B → C：先在 Mac 理解与验证，再用课程内的小型

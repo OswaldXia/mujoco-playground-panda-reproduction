@@ -11,6 +11,9 @@
 | `04_jax_batching.py` | JAX | CPU/GPU | JIT、vmap、PRNG |
 | `05_panda_inspect.py` | 项目完整环境 | CPU | Panda 数据流 |
 | `09_wilson_interval.py` | 标准库 | CPU | 二项成功率区间 |
+| `09_offline_evaluation.py` | 标准库 + compact JSON | CPU | 聚合、分 seed 与验收 |
+| `10_offline_failure_analysis.py` | 标准库 + fixture | CPU | 轨迹失败机制 |
+| `11_offline_integrity_audit.py` | 标准库 + compact JSON | CPU | guide-state 协议审计 |
 
 ## 主动练习
 

@@ -14,7 +14,9 @@
 - 唯一改动：
 - reward 公式与固定 scale：
 - 起始 checkpoint 与 SHA-256：
-- 训练预算/seed/PPO/sampling：
+- control 定义：原 reward + 3M steps
+- treatment 定义：原 reward + 新 reward + 3M steps
+- 配对 train seeds / PPO / sampling：
 - formal eval seeds/episodes/guide probability：
 - original/left/hard/failure-class 验收标准：
 - 会否定假设的结果：
@@ -28,19 +30,24 @@
 
 ## 4. 正式结果
 
-| 分布 | 成功/回合 | 成功率 | Wilson 95% | worst seed | 门槛 | 决策 |
-| --- | ---: | ---: | --- | ---: | --- | --- |
-| Original | | | | | | |
-| Left | | | | | | |
-| Hard | | | | | | |
+每个 train seed 先填一组，再汇总配对差；不能只列 treatment。
+
+| Train seed | 分布 | Control 成功率 | Treatment 成功率 | 配对差 | 两臂门槛 |
+| ---: | --- | ---: | ---: | ---: | --- |
+| | Original | | | | |
+| | Left | | | | |
+| | Hard | | | | |
+
+- 跨 train-seed 配对差均值/范围或区间：
+- 若只有一个 seed，明确标注：`pilot; training-seed uncertainty not estimated`。
 
 ## 5. 机制验证
 
-| Failure class | Baseline | New | 变化 |
+| Failure class | Control | Treatment | 配对变化 |
 | --- | ---: | ---: | ---: |
-| reached_no_lift | 55/1,024 episodes; 55/60 failures | | |
-| lifted_then_dropped | 4/60 | | |
-| lifted_timeout | 1/60 | | |
+| reached_no_lift | | | |
+| lifted_then_dropped | | | |
+| lifted_timeout | | | |
 
 补充 reach-to-lift latency、接触率和 aperture；总数变化时同时给出分子和分母。
 
@@ -58,6 +65,6 @@
 ## 8. 可复现材料
 
 - commit / manifest / console log：
-- checkpoints / TensorBoard / videos：
+- control 与 treatment checkpoints / TensorBoard / videos：
 - evaluation JSON / CSV / plots：
 - archive SHA-256：

@@ -47,6 +47,15 @@ autoreset；筛除后的样本也不再是预定义评估分布。
 [`linux-guide-free-left-trajectory-analysis.json`](../../reproduction/results/linux-guide-free-left-trajectory-analysis.json)。
 列出 schema、guide probability、step-1 异常、success 和正式状态。
 
+先在 Mac 运行协议对比：
+
+```bash
+python docs/labs/11_offline_integrity_audit.py
+```
+
+它不会把两份数字合并，而是验证 historical 标签、非零 guide、step-1 异常与
+schema-4 guide-free 修复链。
+
 ## 源码定位
 
 - `pick_cartesian.py::sample_guide_swap/default_config/step`；
@@ -64,6 +73,7 @@ autoreset；筛除后的样本也不再是预定义评估分布。
 ## 操作
 
 ```bash
+python docs/labs/11_offline_integrity_audit.py
 python -m unittest discover -s reproduction/tests -p 'test_*.py' -v
 
 # 首选；若没有 rg，使用下一条 grep 命令。
@@ -102,7 +112,8 @@ policy stochasticity、checkpoint selection 六类泄漏。每项给出源码证
 ## 通过标准
 
 能完整复述“异常→源码→修复→测试→重采集→降级历史结论”的链条；能独立审计
-至少六类泄漏。至此具备进入毕业实验的评估完整性基础。
+至少六类泄漏。仅运行离线 lab 得到 Gate 4 PRACTICED；自己的 guide-free 全量
+报告通过审计后才是 READY，至此具备进入毕业实验的评估完整性基础。
 
 ## Git 节点
 

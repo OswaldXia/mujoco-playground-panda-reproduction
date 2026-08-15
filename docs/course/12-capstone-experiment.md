@@ -29,6 +29,11 @@ reward shaping 既可能改善 credit assignment，也可能制造新捷径，�
 检查任务成功、原分布回归和失败类型转移。机制指标支持解释，但不能取代预注册
 的最终成功率门槛。
 
+**因果对照必须等计算量。** 起始 checkpoint 的 94.14% 只能描述训练前水平。
+若 treatment 在它之上多训练 3M 步，却直接与未继续训练的起点比较，就无法区分
+“新 reward 有效”和“原 reward 再训练 3M 也会变化”。因此从同一 checkpoint
+分叉两臂：control 保持原 reward 训练 3M，treatment 仅增加新 reward 训练 3M。
+
 ## 唯一改动
 
 新 reward raw term：
@@ -43,20 +48,24 @@ clip\left(\frac{z_{box}-z_{reset}}{0.05-z_{reset}},0,1\right).
 条件、guide probability 或 episode length。通用 contact bonus 被排除，因为
 成功/失败都已经取得接触。
 
-## 控制项
+## 配对对照设计
 
-| 项目 | 固定值 |
-| --- | --- |
-| 起始 checkpoint | robustness step 2,007,040 |
-| 环境 | `PandaPickCubeCartesian`, vision/Warp |
-| 训练 sampling | 与对照 robustness run 相同的 50% targeted mixture |
-| PPO/网络 | 与对照完全相同 |
-| 训练预算 | 3M effective timesteps |
-| train guide | 0.05（保持 checkpoint 训练语义） |
-| formal eval guide | 0.0 |
-| seeds | 101, 202, 303, 404 |
-| episodes | 每分布 4×256 |
-| checkpoint rule | success 优先、reward 次级，运行前固定 |
+| 项目 | Control | Treatment |
+| --- | --- | --- |
+| 起始 checkpoint | 同一个 robustness step 2,007,040 + SHA-256 | 完全相同 |
+| 唯一差异 | 原 reward | 原 reward + contact-gated lift progress |
+| 环境/sampling | vision/Warp，50% targeted mixture | 完全相同 |
+| PPO/网络/学习率 | 冻结的共同配置 | 完全相同 |
+| 追加预算 | 3M effective timesteps | 3M effective timesteps |
+| train seed | 配对使用相同 seed | 配对使用相同 seed |
+| train guide | 0.05 | 0.05 |
+| checkpoint rule | 相同候选频率；success→reward→较早 step | 完全相同 |
+| formal eval | guide 0.0；101/202/303/404，各 256 回合 | 完全相同 |
+
+资源受限时先做一个 train seed 的配对 pilot，只能标记 Gate 5 `PILOT`。若要写成
+“reward 改进在训练随机性下稳定”，预注册至少三个 train seeds；每个 seed 都从
+同一输入 checkpoint 产生一对 control/treatment，并分别完成 original/left/hard
+评估。不要只给 treatment 多跑 seed，也不要从 pilot 中挑最好的 seed 进入报告。
 
 ## 验收标准
 
@@ -67,6 +76,11 @@ clip\left(\frac{z_{box}-z_{reset}}{0.05-z_{reset}},0,1\right).
   并另报其占全部失败的比例；
 - 所有报告 schema 4、guide probability 0.0、无策略更新。
 
+此外，reward 的因果效果以**配对 treatment − control**报告：每个 train seed 给
+三分布成功率差、`reached_no_lift` incidence 差，再汇总跨 seed 均值与范围/区间。
+如果只有单 seed，必须写 `pilot; training-seed uncertainty not estimated`，不进行
+普遍提升表述。
+
 前三组与历史预注册门槛一致。最后一项是机制指标，不能用百分比下降替代前三组
 工程门槛。不得在看见结果后调整阈值或只选有利 seed。
 
@@ -74,7 +88,8 @@ clip\left(\frac{z_{box}-z_{reset}}{0.05-z_{reset}},0,1\right).
 
 先只实现并单元测试 reward 函数，不启动训练。构造无接触、接触且高度递增、
 高于 lift threshold 三组输入，验证门控、单调性和封顶；再做 100k smoke。
-只有测试和 smoke 均通过，才授权一次正式 3M 运行。
+只有测试和 smoke 均通过，才授权一次 control 3M 与一次 treatment 3M 配对运行。
+smoke 也应两臂同预算，验证 metric 只在 treatment 出现且公共指标 schema 一致。
 
 ## 源码定位
 
@@ -98,25 +113,30 @@ git pull --ff-only
 git switch -c experiment/reach-to-lift-stability
 ```
 
-实现后按四步推进：
+实现后按五步推进：
 
 1. 单元测试 reward 在无接触时为 0、随高度单调、达到阈值封顶；
-2. 100k smoke 验证恢复、更新、metric、checkpoint、视频；
-3. 单次 3M 正式训练，不并行扫多个事后权重；
-4. original/left/hard 三分布 guide-free 回归，再跑 left trajectory 分类。
+2. 从同一 checkpoint 做 control/treatment 各 100k smoke，验证恢复、更新、metric、
+   checkpoint、视频；
+3. 冻结 reward scale、train seeds 和 checkpoint rule；
+4. 对每个预注册 seed 运行 control 3M 与 treatment 3M，不扫事后权重；
+5. 对两臂各自选中的 checkpoint 做 original/left/hard guide-free 回归，再跑 left
+   trajectory 分类，按 seed 形成配对差。
 
 本课程不预先给出尚未实施的命令名。实现 launcher 时应采用清晰的新模式与
 `panda-reach-to-lift-*` artifact root，并补入 `reference/commands.md`。
 
 ## 预期结果
 
-预期是“得到可解释结论”，不是预设 PASS。理想结果为 left 超过 95%、original
-保持、`reached_no_lift` 明显减少；如果只提高 reward 或训练评估而正式回归
-不变，结论是失败；若 left 提升但 original 退化，结论是局部收益/整体不接受。
+预期是“得到可解释结论”，不是预设 PASS。理想结果为 treatment 相对等预算
+control 的 left 成功率更高、original 保持、`reached_no_lift` 更少；如果两臂
+相近，不能把 treatment 相对训练前起点的变化归因于 reward；若 left 提升但
+original 退化，结论是局部收益/整体不接受。
 
 ## 常见错误
 
 - 为尽快过线同时增加 reward、继续 targeted sampling、改学习率；
+- 让 treatment 多训练 3M，却用没有追加训练的起始 checkpoint 当唯一对照；
 - 看到 smoke 成功率好就停止正式训练；
 - 用新训练选过的 seed 做“held-out”；
 - 只比较 55 个绝对失败数，不比较总失败/回合数；
@@ -133,12 +153,14 @@ git switch -c experiment/reach-to-lift-stability
 1. 为什么这个 reward 要由 bilateral contact 门控？
 2. 为什么训练仍保留 0.05 guide，正式评估必须为 0？
 3. 哪个结果会否定“post-contact stability”假设？
-4. 为什么新实验必须有新分支和 artifact root？
+4. 为什么 control 也必须从相同 checkpoint 继续训练 3M？
+5. 为什么新实验必须有新分支和 artifact root？
 
 ## 通过标准
 
-代码测试通过、smoke 完整、正式训练只一次、三分布评估和轨迹分类齐全；报告
-能区分事实、推断和限制，并如实给 PASS/FAIL。完成后通过 Gate 5。
+代码测试通过、两臂 smoke 完整、同 seed/预算的配对训练完成、三分布评估和轨迹
+分类齐全；报告能区分事实、推断和限制，并如实给 PASS/FAIL。单 train seed 只到
+PILOT；至少三个预注册 train seeds 且证据齐全才通过 Gate 5 READY。
 
 ## Git 节点
 

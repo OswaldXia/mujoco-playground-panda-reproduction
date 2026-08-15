@@ -83,6 +83,9 @@ python docs/labs/00_course_preflight.py
 python docs/labs/01_transform_2d.py
 python docs/labs/02_ppo_clipping.py --epsilon 0.3
 python docs/labs/09_wilson_interval.py
+python docs/labs/09_offline_evaluation.py
+python docs/labs/10_offline_failure_analysis.py
+python docs/labs/11_offline_integrity_audit.py
 python docs/labs/03_mujoco_state.py
 python docs/labs/04_jax_batching.py
 python docs/labs/05_panda_inspect.py

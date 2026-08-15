@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -132,6 +133,48 @@ class CourseMaterialsTest(unittest.TestCase):
           f"{script.relative_to(ROOT)} failed:\n{result.stdout}\n{result.stderr}",
       )
       self.assertIn("PASS", result.stdout)
+
+  def test_offline_gate_four_labs_run_without_gpu(self) -> None:
+    scripts = (
+        DOCS / "labs" / "09_offline_evaluation.py",
+        DOCS / "labs" / "10_offline_failure_analysis.py",
+        DOCS / "labs" / "11_offline_integrity_audit.py",
+    )
+    for script in scripts:
+      result = subprocess.run(
+          [sys.executable, str(script)],
+          cwd=ROOT,
+          capture_output=True,
+          text=True,
+          timeout=10,
+      )
+      self.assertEqual(
+          result.returncode,
+          0,
+          f"{script.relative_to(ROOT)} failed:\n{result.stdout}\n{result.stderr}",
+      )
+      self.assertIn("PASS", result.stdout)
+
+  def test_offline_fixture_cannot_be_mistaken_for_rate_sample(self) -> None:
+    fixture_path = DOCS / "data" / "guide-free-left-episodes-fixture.json"
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    self.assertEqual(
+        fixture["fixture_role"],
+        "teaching_only_curated_examples_not_a_rate_sample",
+    )
+    reference = fixture["formal_reference"]
+    self.assertEqual(reference["episodes"], 1024)
+    self.assertEqual(reference["successes"], 964)
+    self.assertEqual(sum(reference["failure_counts"].values()), 60)
+    self.assertEqual(len(fixture["curated_episode_examples"]), 8)
+
+  def test_capstone_requires_compute_matched_control(self) -> None:
+    capstone = (COURSE / "12-capstone-experiment.md").read_text(encoding="utf-8")
+    rubric = (COURSE / "GATE_RUBRIC.md").read_text(encoding="utf-8")
+    for phrase in ("Control", "Treatment", "同一个", "3M", "至少三个"):
+      self.assertIn(phrase, capstone)
+    self.assertIn("PILOT", rubric)
+    self.assertIn("READY", rubric)
 
 
 if __name__ == "__main__":
