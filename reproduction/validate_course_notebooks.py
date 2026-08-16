@@ -25,13 +25,18 @@ NOTEBOOKS = (
     "10_failure_analysis.ipynb",
 )
 REQUIRED_SECTIONS = (
+    "## 开始前诊断",
     "## 学习目标",
     "## 本节知识地图",
     "## 关键概念与符号",
     "## 先预测",
     "## 运行与观察",
+    "## Worked example",
+    "## 故意出错",
     "## 动手修改",
     "## 自测",
+    "## 项目源码连接",
+    "## Exit ticket",
     "## 学完请记住",
     "## 反思与记录",
 )
@@ -51,6 +56,11 @@ def validate_structure(path: Path) -> list[str]:
   for field in ("chapter", "slug", "version", "estimated_minutes"):
     if field not in course_meta:
       errors.append(f"metadata.course.{field} is missing")
+  if course_meta.get("version") != "v0.11":
+    errors.append("metadata.course.version must be v0.11")
+  estimated_minutes = course_meta.get("estimated_minutes")
+  if not isinstance(estimated_minutes, int) or not 1 <= estimated_minutes <= 90:
+    errors.append("metadata.course.estimated_minutes must be 1..90")
 
   markdown = "\n".join(
       "".join(cell.get("source", []))
@@ -69,6 +79,10 @@ def validate_structure(path: Path) -> list[str]:
     errors.append("kernel guard is missing")
   if "assert " not in code:
     errors.append("no executable self-check assertion found")
+  if "check_choice" not in code and "check_value" not in code:
+    errors.append("targeted feedback helper is missing")
+  if "save_progress" not in code:
+    errors.append("local progress hook is missing")
 
   for index, cell in enumerate(notebook.get("cells", [])):
     if not cell.get("id"):

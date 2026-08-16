@@ -42,7 +42,7 @@ echo "========================================================================"
 echo "  Repository     ${REPO_ROOT}"
 echo "  Python         ${PYTHON_BIN}"
 echo "  Kernel         Panda Course (.venv)"
-echo "  Start page     docs/notebooks/README.md"
+echo "  Start page     docs/notebooks/00_course_dashboard.ipynb"
 echo "------------------------------------------------------------------------"
 echo "  Close Jupyter with Ctrl-C in this terminal."
 echo ""
@@ -50,5 +50,5 @@ echo ""
 cd "${REPO_ROOT}"
 exec "${JUPYTER_BIN}" lab \
   --ServerApp.root_dir="${REPO_ROOT}" \
-  --ServerApp.default_url="/lab/tree/docs/notebooks" \
+  --ServerApp.default_url="/lab/tree/docs/notebooks/00_course_dashboard.ipynb" \
   "$@"

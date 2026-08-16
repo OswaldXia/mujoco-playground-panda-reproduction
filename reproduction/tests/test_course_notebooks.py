@@ -42,16 +42,31 @@ class CourseNotebooksTest(unittest.TestCase):
       self.assertTrue(path.is_file(), name)
       self.assertEqual(VALIDATOR.validate_structure(path), [], name)
       notebook = json.loads(path.read_text(encoding="utf-8"))
-      self.assertIn(
-          notebook["metadata"]["course"]["version"], ("v0.10.1", "v0.11")
-      )
+      self.assertEqual(notebook["metadata"]["course"]["version"], "v0.11")
 
   def test_launcher_is_executable(self) -> None:
     launcher = ROOT / "reproduction" / "start_course_notebooks.sh"
     self.assertTrue(os.access(launcher, os.X_OK))
     text = launcher.read_text(encoding="utf-8")
     self.assertIn('--ServerApp.root_dir="${REPO_ROOT}"', text)
-    self.assertIn('/lab/tree/docs/notebooks', text)
+    self.assertIn('/lab/tree/docs/notebooks/00_course_dashboard.ipynb', text)
+
+  def test_every_notebook_has_the_active_learning_loop(self) -> None:
+    for name in VALIDATOR.NOTEBOOKS:
+      notebook = json.loads((NOTEBOOK_DIR / name).read_text(encoding="utf-8"))
+      markdown = "\n".join(
+          "".join(cell.get("source", []))
+          for cell in notebook["cells"]
+          if cell["cell_type"] == "markdown"
+      )
+      for section in (
+          "## 开始前诊断",
+          "## Worked example",
+          "## 故意出错",
+          "## 项目源码连接",
+          "## Exit ticket",
+      ):
+        self.assertIn(section, markdown, f"{name}: {section}")
 
   def test_transform_helpers_match_hand_calculation(self) -> None:
     transform = UTILS.rigid_transform(

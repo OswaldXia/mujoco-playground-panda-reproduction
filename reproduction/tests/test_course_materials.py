@@ -104,8 +104,8 @@ class CourseMaterialsTest(unittest.TestCase):
   def test_course_release_status_is_honest(self) -> None:
     readme = (COURSE / "README.md").read_text(encoding="utf-8")
     status = (COURSE / "CURRICULUM_STATUS.md").read_text(encoding="utf-8")
-    self.assertIn("v0.10.1", readme)
-    self.assertIn("v0.10.1", status)
+    self.assertIn("v0.11", readme)
+    self.assertIn("v0.11", status)
     self.assertIn("checkpoint", status)
     self.assertIn("clean-clone", status)
 
