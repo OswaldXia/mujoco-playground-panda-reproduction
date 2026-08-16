@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import re
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -30,6 +32,21 @@ REQUIRED_SECTIONS = (
     "## Git 节点",
 )
 LINK_PATTERN = re.compile(r"(?<!!)\[[^]]+\]\(([^)]+)\)")
+
+
+def _load_module(name: str, path: Path):
+  spec = importlib.util.spec_from_file_location(name, path)
+  if spec is None or spec.loader is None:
+    raise RuntimeError(f"Cannot import {path}")
+  module = importlib.util.module_from_spec(spec)
+  sys.modules[name] = module
+  spec.loader.exec_module(module)
+  return module
+
+
+MATH_AUDIT = _load_module(
+    "audit_markdown_math", ROOT / "reproduction" / "audit_markdown_math.py"
+)
 
 
 class CourseMaterialsTest(unittest.TestCase):
@@ -59,17 +76,30 @@ class CourseMaterialsTest(unittest.TestCase):
           missing.append(f"{document.relative_to(ROOT)} -> {target}")
     self.assertFalse(missing, "broken local links:\n" + "\n".join(missing))
 
-  def test_markdown_math_uses_github_compatible_block_delimiters(self) -> None:
-    offenders = []
-    for document in COURSE.rglob("*.md"):
-      text = document.read_text(encoding="utf-8")
-      if any(line in (r"\[", r"\]") for line in text.splitlines()):
-        offenders.append(str(document.relative_to(ROOT)))
+  def test_markdown_math_syntax_is_renderable(self) -> None:
+    issues = MATH_AUDIT.audit_repository(ROOT)
     self.assertFalse(
-        offenders,
-        "use $$ blocks instead of \\[ ... \\] for GitHub rendering: "
-        + str(offenders),
+        issues,
+        "Markdown math issues:\n"
+        + "\n".join(issue.display(ROOT) for issue in issues),
     )
+
+  def test_markdown_math_audit_rejects_known_failures(self) -> None:
+    cases = {
+        "math-in-code.md": "`${}^A p`\n",
+        "legacy-delimiter.md": "\\[\nx^2\n\\]\n",
+        "unclosed-block.md": "$$\nx^2\n",
+        "unbalanced-braces.md": "Inline $\\frac{a}{b$.\n",
+        "raw-command.md": "Raw \\gamma must not leak.\n",
+    }
+    with tempfile.TemporaryDirectory() as directory:
+      temp = Path(directory)
+      found = []
+      for name, content in cases.items():
+        path = temp / name
+        path.write_text(content, encoding="utf-8")
+        found.extend(MATH_AUDIT.audit_file(path))
+    self.assertEqual({issue.path.name for issue in found}, set(cases))
 
   def test_course_release_status_is_honest(self) -> None:
     readme = (COURSE / "README.md").read_text(encoding="utf-8")
