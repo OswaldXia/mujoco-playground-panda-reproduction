@@ -12,7 +12,9 @@ Notebook 是主要学习界面，不是正式训练入口。先打开
 | `00_course_dashboard.ipynb` | 00 | 30 分钟 | 路线、证据边界、红黄绿进度 |
 | `01_frames_and_transforms.ipynb` | 01 | 60–90 分钟 | 坐标系、组合顺序、三维可视化 |
 | `02_returns_gae_and_ppo.ipynb` | 02 | 90 分钟 | return、GAE、概率比、裁剪 |
+| `03_mujoco_state_and_control.ipynb` | 03 | 75 分钟 | Model/Data、状态、actuator、物理步 |
 | `04_jax_execution_model.ipynb` | 04 | 90 分钟 | PRNG、vmap、scan、JIT 冷热调用 |
+| `05_panda_environment_dataflow.ipynb` | 05 | 90 分钟 | action→IK→physics→reward→RGB |
 | `09_evaluation_statistics.ipynb` | 09 | 60–90 分钟 | Wilson、分 seed、固定门槛 |
 | `10_failure_analysis.ipynb` | 10–11 | 90 分钟 | 轨迹阶段、失败类别、协议完整性 |
 

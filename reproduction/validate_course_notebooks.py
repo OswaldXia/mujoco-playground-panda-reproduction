@@ -15,9 +15,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK_DIR = ROOT / "docs" / "notebooks"
 NOTEBOOKS = (
+    "00_course_dashboard.ipynb",
     "01_frames_and_transforms.ipynb",
     "02_returns_gae_and_ppo.ipynb",
+    "03_mujoco_state_and_control.ipynb",
     "04_jax_execution_model.ipynb",
+    "05_panda_environment_dataflow.ipynb",
     "09_evaluation_statistics.ipynb",
     "10_failure_analysis.ipynb",
 )
@@ -149,27 +152,28 @@ def main() -> int:
   print("\nPanda course notebook validation")
   print("=" * 76)
   failures = []
+  total = len(NOTEBOOKS)
   for position, name in enumerate(NOTEBOOKS, start=1):
     path = NOTEBOOK_DIR / name
     if not path.is_file():
       failures.append(f"{name}: file missing")
-      print(f"  [{position}/5] FAIL  {name}: file missing")
+      print(f"  [{position}/{total}] FAIL  {name}: file missing")
       continue
     errors = validate_structure(path)
     if errors:
       failures.extend(f"{name}: {error}" for error in errors)
-      print(f"  [{position}/5] FAIL  {name}: {'; '.join(errors)}")
+      print(f"  [{position}/{total}] FAIL  {name}: {'; '.join(errors)}")
       continue
     if args.structure_only:
-      print(f"  [{position}/5] PASS  {name}: structure and clean outputs")
+      print(f"  [{position}/{total}] PASS  {name}: structure and clean outputs")
       continue
     try:
       seconds = execute_notebook(path, args.timeout)
     except Exception as exc:  # pylint: disable=broad-exception-caught
       failures.append(f"{name}: {type(exc).__name__}: {exc}")
-      print(f"  [{position}/5] FAIL  {name}: {type(exc).__name__}: {exc}")
+      print(f"  [{position}/{total}] FAIL  {name}: {type(exc).__name__}: {exc}")
     else:
-      print(f"  [{position}/5] PASS  {name}: clean-kernel run in {seconds:.1f}s")
+      print(f"  [{position}/{total}] PASS  {name}: clean-kernel run in {seconds:.1f}s")
 
   print("-" * 76)
   if failures:

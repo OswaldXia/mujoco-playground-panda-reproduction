@@ -38,6 +38,10 @@ Panda XML 通过 include 组合机器人和场景。geom 参与形状/碰撞，s
 
 ## 最小实验
 
+先完成
+[`03_mujoco_state_and_control.ipynb`](../notebooks/03_mujoco_state_and_control.ipynb)，
+用单关节模型区分 XML、Model、Data、`ctrl`、`qpos` 和 `xpos`，再进入完整 Panda。
+
 在已安装 MuJoCo 的 `.venv` 中运行
 [`labs/03_mujoco_state.py`](../labs/03_mujoco_state.py)。它创建一个带滑动关节
 和位置 actuator 的最小模型，打印维度并推进 20 步。

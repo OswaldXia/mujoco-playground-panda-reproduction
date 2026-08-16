@@ -40,6 +40,11 @@
 
 ## 最小实验
 
+先完成
+[`05_panda_environment_dataflow.ipynb`](../notebooks/05_panda_environment_dataflow.ipynb)，
+它用可执行示意图和真实源码锚点连接 action→IK→physics→reward→next RGB；随后
+必须回到真实 `pick_cartesian.py` 完成源码审计。
+
 运行 [`labs/05_panda_inspect.py`](../labs/05_panda_inspect.py)。默认只加载
 state observation，打印关键配置、action size、obs shape、初始方块位置，并做
 一次零动作 step。第一次 JIT 可较慢。

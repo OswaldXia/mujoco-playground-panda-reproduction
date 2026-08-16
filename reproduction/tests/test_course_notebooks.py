@@ -36,13 +36,15 @@ FEEDBACK = _load_module("course_feedback", NOTEBOOK_DIR / "course_feedback.py")
 class CourseNotebooksTest(unittest.TestCase):
 
   def test_all_versioned_notebooks_have_clean_valid_structure(self) -> None:
-    self.assertEqual(len(VALIDATOR.NOTEBOOKS), 5)
+    self.assertEqual(len(VALIDATOR.NOTEBOOKS), 8)
     for name in VALIDATOR.NOTEBOOKS:
       path = NOTEBOOK_DIR / name
       self.assertTrue(path.is_file(), name)
       self.assertEqual(VALIDATOR.validate_structure(path), [], name)
       notebook = json.loads(path.read_text(encoding="utf-8"))
-      self.assertEqual(notebook["metadata"]["course"]["version"], "v0.10.1")
+      self.assertIn(
+          notebook["metadata"]["course"]["version"], ("v0.10.1", "v0.11")
+      )
 
   def test_launcher_is_executable(self) -> None:
     launcher = ROOT / "reproduction" / "start_course_notebooks.sh"
