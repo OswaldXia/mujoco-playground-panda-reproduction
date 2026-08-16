@@ -50,6 +50,7 @@ test = [
 ]
 notebooks = [
     "matplotlib",
+    "ipywidgets",
     "jupyter",
     "ipykernel",
     "nbclient",

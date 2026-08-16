@@ -1,13 +1,15 @@
 # Panda 课程交互式 Notebook
 
-Notebook 是概念教学层，不是正式训练入口。它们按“知识地图—概念卡—先预测—
-运行—修改—自测—记忆清单”组织；可复现训练、评估、备份和 Git 证据仍以
-`reproduction/` 下的脚本为准。
+Notebook 是主要学习界面，不是正式训练入口。先打开
+[`00_course_dashboard.ipynb`](00_course_dashboard.ipynb) 选择路线和查看本地进度；
+再按“诊断—知识地图—worked example—预测—运行—故意出错—迁移—Exit ticket”
+完成单元。可复现训练、评估、备份和 Git 证据仍以 `reproduction/` 下的脚本为准。
 
 ## 推荐顺序
 
 | Notebook | 对应章节 | 预计时间 | 重点 |
 | --- | --- | ---: | --- |
+| `00_course_dashboard.ipynb` | 00 | 30 分钟 | 路线、证据边界、红黄绿进度 |
 | `01_frames_and_transforms.ipynb` | 01 | 60–90 分钟 | 坐标系、组合顺序、三维可视化 |
 | `02_returns_gae_and_ppo.ipynb` | 02 | 90 分钟 | return、GAE、概率比、裁剪 |
 | `04_jax_execution_model.ipynb` | 04 | 90 分钟 | PRNG、vmap、scan、JIT 冷热调用 |
@@ -39,13 +41,17 @@ Notebook 是概念教学层，不是正式训练入口。它们按“知识地�
 
 ## 学习规则
 
-1. 每次只运行一个 Notebook，先读知识地图与概念表，再写“先预测”答案；
-2. 使用 `Restart Kernel and Run All`，不要依赖乱序执行留下的变量；
-3. 完成“动手修改”后恢复原始变量，再运行自测；
-4. 将反思写入 `notes/`，不要把个人运行输出提交到课程发布分支；
-5. 继续完成对应 `.py` starter，因为能运行现成 cell 不等于能独立实现；
-6. 关闭页面后复述“学完请记住”；说不出名词时回到对应知识卡；
-7. 正式数字必须由命令行 evaluator 产生，Notebook 只复核已有证据。
+1. 第一次先运行 00；以后每次只打开 dashboard 推荐的一个 Notebook；
+2. 先完成开始诊断、知识地图和 worked example，再写“先预测”答案；
+3. 使用 `Restart Kernel and Run All`，不要依赖乱序执行留下的变量；
+4. 完成“动手修改”后恢复原始变量，再运行自测；
+5. 将反思写入 `notes/`，不要把个人运行输出提交到课程发布分支；
+6. 继续完成对应 `.py` starter，因为能运行现成 cell 不等于能独立实现；
+7. 关闭页面后复述“学完请记住”，并完成 Exit ticket；
+8. 正式数字必须由命令行 evaluator 产生，Notebook 只复核已有证据。
+
+学习状态仅在学习者把 `SAVE_PROGRESS` 改为 `True` 后写入
+`reproduction/artifacts/course-progress/`，不会进入 Git，也不会修改正式结果。
 
 ## 仓库输出策略
 

@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import tempfile
 import unittest
 
 import numpy as np
@@ -29,6 +30,7 @@ VALIDATOR = _load_module(
     ROOT / "reproduction" / "validate_course_notebooks.py",
 )
 UTILS = _load_module("course_utils", NOTEBOOK_DIR / "course_utils.py")
+FEEDBACK = _load_module("course_feedback", NOTEBOOK_DIR / "course_feedback.py")
 
 
 class CourseNotebooksTest(unittest.TestCase):
@@ -84,6 +86,36 @@ class CourseNotebooksTest(unittest.TestCase):
         [0.9253038995713028, 0.9542091734246192],
         atol=1e-6,
     )
+
+  def test_feedback_helpers_report_targeted_results(self) -> None:
+    self.assertTrue(
+        FEEDBACK.check_value("point", [2.0, 2.0], [2.0, 2.0], hint="unused")
+    )
+    self.assertFalse(
+        FEEDBACK.check_choice(
+            "frame",
+            "camera",
+            "world",
+            hint="read the superscript",
+            explanation="coordinates are expressed in world",
+        )
+    )
+
+  def test_progress_round_trip_stays_under_artifacts(self) -> None:
+    with tempfile.TemporaryDirectory() as directory:
+      root = Path(directory)
+      path = FEEDBACK.save_progress(
+          root,
+          "01-frames",
+          {"frame": "green", "transform": "yellow"},
+          exit_ticket_passed=False,
+      )
+      self.assertEqual(
+          path.relative_to(root).parts[:3],
+          ("reproduction", "artifacts", "course-progress"),
+      )
+      loaded = FEEDBACK.load_progress(root)
+      self.assertEqual(loaded["notebooks"]["01-frames"]["concepts"]["frame"], "green")
 
 
 if __name__ == "__main__":
