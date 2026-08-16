@@ -41,14 +41,18 @@ def check_value(
 
 def check_choice(
     label: str,
-    answer: str,
+    answer: str | None,
     expected: str,
     *,
     hint: str,
     explanation: str,
 ) -> bool:
   """Checks a short conceptual answer without hiding the explanation."""
-  normalized = answer.strip().casefold()
+  if answer is None or not str(answer).strip():
+    print(f"[NEXT] {label}: answer this question before continuing.")
+    print(f"       Hint: {hint}")
+    return False
+  normalized = str(answer).strip().casefold()
   passed = normalized == expected.strip().casefold()
   if passed:
     print(f"[PASS] {label}: {explanation}")
@@ -121,4 +125,3 @@ def format_progress_table(rows: Iterable[tuple[str, str, str]]) -> str:
   ]
   lines.extend(f"| {title} | {status} | {exit_status} |" for title, status, exit_status in rows)
   return "\n".join(lines)
-

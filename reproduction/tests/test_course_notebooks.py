@@ -117,6 +117,15 @@ class CourseNotebooksTest(unittest.TestCase):
             explanation="coordinates are expressed in world",
         )
     )
+    self.assertFalse(
+        FEEDBACK.check_choice(
+            "blank diagnostic",
+            None,
+            "world",
+            hint="write your own answer first",
+            explanation="unused until an answer exists",
+        )
+    )
 
   def test_progress_round_trip_stays_under_artifacts(self) -> None:
     with tempfile.TemporaryDirectory() as directory:
