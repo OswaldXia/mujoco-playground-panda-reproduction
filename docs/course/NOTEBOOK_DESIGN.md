@@ -1,11 +1,14 @@
-# v0.11 Notebook 教学设计定稿
+# v0.12 Notebook 教学设计：教材与练习分层
 
 ## 决策
 
-Jupyter 是概念学习和离线分析的主要界面；Markdown 是可检索的系统参考；
+VS Code 中的 Jupyter Notebook 是推荐学习界面，JupyterLab 是统一验证与备选入口；
+Markdown 是可检索的系统参考；
 Python/Shell 工具仍是正式训练、评估、备份、测试和服务器运行的工程入口。
 
-三者不是重复版本：Notebook 让学习者观察中间量、犯可诊断的错误并获得即时反馈；
+v0.12 将 Notebook 再分为两级：`foundation` 能独立承担定义、原理和推导教学；
+`interactive` 用于综合练习，必须配合章节参考。三者不是重复版本：Notebook 让学习者
+观察中间量、犯可诊断的错误并获得即时反馈；
 Markdown 解释完整背景、推导和故障边界；命令行工具提供无交互、可批量、可审计的
 正式证据。Notebook 通过不等于对应能力门 READY。
 
@@ -14,7 +17,9 @@ Markdown 解释完整背景、推导和故障边界；命令行工具提供无�
 | Notebook | 教学任务 | 完成后迁移到 |
 | --- | --- | --- |
 | 00 dashboard | 路线、证据边界、红黄绿进度 | 复现契约与学习分支 |
-| 01 坐标变换 | 观察坐标表达和变换顺序 | 三维 starter、Panda IK 源码 |
+| 01A 坐标表示（foundation） | 严格区分点、向量、frame 与坐标数组 | Panda 位置/增量源码 |
+| 01B 刚体变换（foundation） | 推导 $SE(3)$、组合与逆变换 | Panda 目标位姿与 IK |
+| 01 综合变换（interactive） | 整合坐标链与三维可视化 | 三维 starter、Panda IK 源码 |
 | 02 Return/GAE/PPO | 观察终止 mask、优势符号和裁剪 | advantage starter、PPO 配置 |
 | 03 MuJoCo 状态/控制 | 连接 Model、Data、actuator 和物理步 | Panda MJCF 与控制器 |
 | 04 JAX | 观察 PRNG、shape、时间维和冷/热调用 | JAX starter、GPU 计算栈 |
@@ -26,9 +31,15 @@ Markdown 解释完整背景、推导和故障边界；命令行工具提供无�
 control/treatment 正式实验，不转换成 Notebook 操作。它们需要稳定退出码、日志、
 后台运行、资源监控和可重复调用。
 
-## 每个 Notebook 的固定学习循环
+## 两级 Notebook 的学习循环
 
 ```text
+foundation:
+开始前诊断 → 严格定义 → 符号/单位/shape → 原理推导 → 手算
+             → 带注释实现 → 故意出错 → 分层练习 → 源码迁移
+             → 自测 → Exit ticket → 记忆与反思
+
+interactive:
 开始前诊断 → 知识地图 → Worked example → 先预测 → 运行与观察
              → 故意出错 → 动手修改 → 自测 → 项目源码连接
              → Exit ticket → 记忆与反思
@@ -44,6 +55,11 @@ control/treatment 正式实验，不转换成 Notebook 操作。它们需要稳�
 - **项目源码连接**：明确 Notebook 中的概念落在真实文件、配置或报告的哪里。
 - **Exit ticket**：检查能否迁移判断；通过后才建议进入下一单元。
 - **记忆与反思**：脱稿复述，并把需要长期保留的结论写进个人 `notes/`。
+
+foundation 级还必须满足
+[`FOUNDATION_NOTEBOOK_STANDARD.md`](FOUNDATION_NOTEBOOK_STANDARD.md)：前置知识、
+严格定义、符号/单位/shape、逐步推导、手算、语义注释、分层练习和真实源码迁移。
+诊断与 Exit ticket 默认留空，不允许在学习者作答前展示正确答案。
 
 ## 反馈与进度规则
 
@@ -63,18 +79,21 @@ control/treatment 正式实验，不转换成 Notebook 操作。它们需要稳�
 1. 统一使用项目 `.venv`；启动器直接打开 dashboard，并创建仓库内临时 kernelspec；
 2. 发布版不保存 outputs/execution count，每个 cell 有稳定 nbformat id；
 3. 全部 Notebook 必须从空 kernel、仓库根目录、非交互绘图后端顺序执行；
-4. 每个 Notebook 预计不超过 90 分钟，并能在 Mac CPU 上完成；
+4. interactive 建议不超过 90 分钟；foundation 微课允许 60–150 分钟，内容过多时
+   继续拆分；
 5. 共享纯函数放在 `docs/notebooks/course_utils.py`，教学反馈放在
    `docs/notebooks/course_feedback.py`；
 6. Notebook 不写 checkpoint、不修改策略、不覆盖正式报告；
 7. 精选 8 条轨迹始终标注为非成功率样本；
-8. 控件必须有确定的默认值，`Restart Kernel and Run All` 不需要人工点击；
+8. 数值实验控件必须有确定默认值；诊断与 Exit ticket 默认留空，但空值不得中断
+   `Restart Kernel and Run All`；
 9. 正式结果仍由 `reproduction/` 工具生成，并接受现有单元测试与证据校验。
 
 ## 发布验收
 
-- 8/8 Notebook 主动学习结构检查通过；
-- 8/8 从空 kernel 顺序执行通过，单本不超过 180 秒；
+- 10/10 Notebook 主动学习结构检查通过；
+- 10/10 从空 kernel 顺序执行通过，单本不超过 180 秒；
+- 2/2 foundation Notebook 通过严格定义、推导、注释和空白作答校验；
 - 所有本地链接存在，源文件无保存输出和 execution count；
 - 反馈函数、进度路径与关键数值有自动测试；
 - 启动器默认打开 dashboard，kernel 错配能给出操作性错误；
@@ -82,5 +101,5 @@ control/treatment 正式实验，不转换成 Notebook 操作。它们需要稳�
 - Markdown 公式审计、课程测试与 reproduction 回归测试继续通过。
 
 能力等级仍按 [`GATE_RUBRIC.md`](GATE_RUBRIC.md) 的口头解释、starter、源码证据和
-正式产物综合判断。Notebook 的作用是缩短反馈回路，不是把“完全掌握”简化成八次
+正式产物综合判断。Notebook 的作用是缩短反馈回路，不是把“完全掌握”简化成若干次
 Run All。

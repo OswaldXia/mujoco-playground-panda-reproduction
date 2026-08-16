@@ -1,8 +1,8 @@
 # Panda 视觉强化学习：从原理到可复现实验
 
-> 课程版本：v0.11（Jupyter 主学习界面版）
+> 课程版本：v0.12（教材级基础微课试点版）
 > 对应代码基线：上游 `4db186a5`，本课程分支
-> `docs/course-v0.11-jupyter-learning`
+> `docs/course-v0.12-foundations`
 > 预计投入：90–110 小时，建议 8–12 周
 
 这不是一份“照抄命令即可完成”的安装说明，而是一条从机器人与强化学习
@@ -20,11 +20,11 @@ Mac 基础、离线分析或 Linux GPU 路线。
 **[`KNOWLEDGE_MAP.md`](KNOWLEDGE_MAP.md)**：每章只保留必须掌握的命名概念、
 一句话解释、项目落点和掌握证据。每章正文也有同名的“本章知识清单”。
 
-课程现在以 8 个经过空内核验证的
-[`交互式 Notebook`](../notebooks/README.md)作为第 00–05、09–11 章的主要学习界面。
-它们负责诊断、可视化、故意出错、即时反馈和知识迁移；Markdown 是系统参考，
-正式训练和评估仍使用命令行工具。设计边界见
-[`NOTEBOOK_DESIGN.md`](NOTEBOOK_DESIGN.md)。
+课程包含 10 个经过空内核验证的 [`Notebook`](../notebooks/README.md)。其中第 01A、
+01B 已按 v0.12 教材级标准重建，包含严格定义、逐步推导、手算、语义注释和源码迁移；
+其余仍是 v0.11 interactive 练习，需要配合章节 Markdown。不要把尚未升级的练习册
+当成独立教材。设计边界见 [`NOTEBOOK_DESIGN.md`](NOTEBOOK_DESIGN.md)和
+[`FOUNDATION_NOTEBOOK_STANDARD.md`](FOUNDATION_NOTEBOOK_STANDARD.md)。
 
 ## 开始前应已掌握
 
@@ -113,8 +113,9 @@ Preview 中抽样查看复杂矩阵和分式的视觉结果。
 
 ## 版本状态
 
-v0.11 已具备分路线入口、全课程知识地图、GitHub 兼容公式、8 个空内核可执行
-Notebook、课程 dashboard、主动学习闭环、完整路径、真实
+v0.12 已具备分路线入口、全课程知识地图、GitHub 兼容公式、10 个空内核可执行
+Notebook、课程 dashboard，以及第 01A–01B 的教材级基础样板。其余章节尚待按同一
+标准逐步升级。课程同时保留完整路径、真实
 命令、实验题、答案、故障排查和本项目的机器可读
 证据。升为 v1.0 前仍需：公开或可访问的 checkpoint 及 SHA-256、精选代表性
 回放、一次 clean-clone 全流程验证、至少一名新学习者试学，以及第 12 章参考
@@ -126,7 +127,7 @@ Notebook、课程 dashboard、主动学习闭环、完整路径、真实
 
 1. 从 [`START_HERE.md`](START_HERE.md) 运行预检并确认路线。
 2. 从课程发布分支新建学习分支：
-   `git switch -c learn/panda-course-v0.11`；已有同名分支则直接切换。
+   `git switch -c learn/panda-course-v0.12`；已有同名分支则直接切换。
 3. 若当前 checkout 没有 `.venv`，先执行第 06 章“操作”中的创建与安装命令，
    安装完成后返回第 00 章；Mac/Linux 必须各自在本机创建。
 4. 顺序完成章节，不跳过 Gate；把答案写入自己的 `notes/`。

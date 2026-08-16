@@ -43,7 +43,7 @@ class CourseNotebooksTest(unittest.TestCase):
       self.assertEqual(VALIDATOR.validate_structure(path), [], name)
       notebook = json.loads(path.read_text(encoding="utf-8"))
       expected_version = (
-          "v0.12" if name in VALIDATOR.FOUNDATION_NOTEBOOKS else "v0.11"
+          "v0.12" if name in VALIDATOR.V012_NOTEBOOKS else "v0.11"
       )
       self.assertEqual(
           notebook["metadata"]["course"]["version"], expected_version

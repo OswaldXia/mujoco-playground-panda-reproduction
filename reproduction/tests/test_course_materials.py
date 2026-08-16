@@ -104,8 +104,8 @@ class CourseMaterialsTest(unittest.TestCase):
   def test_course_release_status_is_honest(self) -> None:
     readme = (COURSE / "README.md").read_text(encoding="utf-8")
     status = (COURSE / "CURRICULUM_STATUS.md").read_text(encoding="utf-8")
-    self.assertIn("v0.11", readme)
-    self.assertIn("v0.11", status)
+    self.assertIn("v0.12", readme)
+    self.assertIn("v0.12", status)
     self.assertIn("checkpoint", status)
     self.assertIn("clean-clone", status)
 
@@ -125,6 +125,16 @@ class CourseMaterialsTest(unittest.TestCase):
     self.assertFalse(
         [str(path.relative_to(ROOT)) for path in required if not path.is_file()]
     )
+
+  def test_vscode_recommends_project_notebook_environment(self) -> None:
+    settings = json.loads((ROOT / ".vscode" / "settings.json").read_text())
+    extensions = json.loads((ROOT / ".vscode" / "extensions.json").read_text())
+    self.assertEqual(
+        settings["python.defaultInterpreterPath"],
+        "${workspaceFolder}/.venv/bin/python",
+    )
+    self.assertIn("ms-python.python", extensions["recommendations"])
+    self.assertIn("ms-toolsai.jupyter", extensions["recommendations"])
 
   def test_documented_default_tests_need_no_pytest_extra(self) -> None:
     offenders = []

@@ -35,6 +35,7 @@ FOUNDATION_NOTEBOOKS = {
     "01a_coordinate_representations.ipynb",
     "01b_frames_and_rigid_transforms.ipynb",
 }
+V012_NOTEBOOKS = FOUNDATION_NOTEBOOKS | {"00_course_dashboard.ipynb"}
 REQUIRED_SECTIONS = (
     "## 开始前诊断",
     "## 学习目标",
@@ -76,7 +77,7 @@ def validate_structure(path: Path) -> list[str]:
     if field not in course_meta:
       errors.append(f"metadata.course.{field} is missing")
   foundation = path.name in FOUNDATION_NOTEBOOKS
-  expected_version = "v0.12" if foundation else "v0.11"
+  expected_version = "v0.12" if path.name in V012_NOTEBOOKS else "v0.11"
   if course_meta.get("version") != expected_version:
     errors.append(f"metadata.course.version must be {expected_version}")
   estimated_minutes = course_meta.get("estimated_minutes")

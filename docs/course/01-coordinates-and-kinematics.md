@@ -2,14 +2,23 @@
 
 建议时间：8 小时。硬件：Mac 即可。
 
-本章不是一次读完的摘要。按顺序完成四节微课，每节都先做“暂停并预测”：
+本章不再要求从简略摘要直接跳到综合实验。按顺序完成教材级微课程，再进入综合
+练习和 Panda 源码：
 
-1. [`01A 向量、点与坐标系`](foundations/01a-vectors-and-frames.md)（1h）；
-2. [`01B 齐次变换与组合`](foundations/01b-homogeneous-transforms.md)（1h）；
-3. [`坐标系交互 Notebook`](../notebooks/01_frames_and_transforms.ipynb)（1–1.5h）；
+1. [`01A 向量、点与坐标表示`](../notebooks/01a_coordinate_representations.ipynb)
+   （1.5–2h）；
+2. [`01B 坐标系与刚体变换`](../notebooks/01b_frames_and_rigid_transforms.ipynb)
+   （1.5–2h）；
+3. [`坐标变换综合实验`](../notebooks/01_frames_and_transforms.ipynb)（1–1.5h）；
 4. [`01C FK、雅可比与 IK`](foundations/01c-fk-ik.md)（1.5h）；
 5. [`01D Panda 笛卡尔控制`](foundations/01d-panda-cartesian-control.md)（1h）；
 6. starter 实验、源码审计与复盘（2h）。
+
+原有 [`01A 文字摘要`](foundations/01a-vectors-and-frames.md)和
+[`01B 文字摘要`](foundations/01b-homogeneous-transforms.md)保留为复习索引，不再作为
+首次学习的主要材料。v0.12 Notebook 必须满足
+[`教材级标准`](FOUNDATION_NOTEBOOK_STANDARD.md)：严格定义、符号域、逐步推导、
+手算例子、语义注释和源码迁移缺一不可。
 
 ## 学习目标
 
@@ -53,9 +62,12 @@ $$
 
 ## 最小实验
 
-先通过统一入口打开
-[`01_frames_and_transforms.ipynb`](../notebooks/01_frames_and_transforms.ipynb)，
-完成预测、可视化、自测与反思。Notebook 从空内核可完整执行，但不要跳过纸面预测。
+先完成
+[`01a_coordinate_representations.ipynb`](../notebooks/01a_coordinate_representations.ipynb)
+和
+[`01b_frames_and_rigid_transforms.ipynb`](../notebooks/01b_frames_and_rigid_transforms.ipynb)，
+再打开 [`01_frames_and_transforms.ipynb`](../notebooks/01_frames_and_transforms.ipynb)
+做综合实验。三本都可从空内核执行，但第一次学习必须逐格阅读、手算和作答。
 
 运行 [`labs/01_transform_2d.py`](../labs/01_transform_2d.py)。先手算一个点旋转
 90°再平移的结果，再让脚本比较“先旋转后平移”和“先平移后旋转”。

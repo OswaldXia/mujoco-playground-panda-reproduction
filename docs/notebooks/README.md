@@ -1,6 +1,6 @@
 # Panda 课程交互式 Notebook
 
-Notebook 是主要学习界面，不是正式训练入口。先打开
+Notebook 是概念学习界面，不是正式训练入口。推荐用 VS Code 打开整个仓库，先打开
 [`00_course_dashboard.ipynb`](00_course_dashboard.ipynb) 选择路线和查看本地进度；
 再按“诊断—知识地图—worked example—预测—运行—故意出错—迁移—Exit ticket”
 完成单元。可复现训练、评估、备份和 Git 证据仍以 `reproduction/` 下的脚本为准。
@@ -10,7 +10,9 @@ Notebook 是主要学习界面，不是正式训练入口。先打开
 | Notebook | 对应章节 | 预计时间 | 重点 |
 | --- | --- | ---: | --- |
 | `00_course_dashboard.ipynb` | 00 | 30 分钟 | 路线、证据边界、红黄绿进度 |
-| `01_frames_and_transforms.ipynb` | 01 | 60–90 分钟 | 坐标系、组合顺序、三维可视化 |
+| `01a_coordinate_representations.ipynb` | 01A | 90–120 分钟 | 点、向量、frame、严格定义与基变换推导 |
+| `01b_frames_and_rigid_transforms.ipynb` | 01B | 100–130 分钟 | $SE(3)$、组合、逆变换与源码迁移 |
+| `01_frames_and_transforms.ipynb` | 01 综合 | 60–90 分钟 | 坐标链综合练习与三维可视化 |
 | `02_returns_gae_and_ppo.ipynb` | 02 | 90 分钟 | return、GAE、概率比、裁剪 |
 | `03_mujoco_state_and_control.ipynb` | 03 | 75 分钟 | Model/Data、状态、actuator、物理步 |
 | `04_jax_execution_model.ipynb` | 04 | 90 分钟 | PRNG、vmap、scan、JIT 冷热调用 |
@@ -18,7 +20,26 @@ Notebook 是主要学习界面，不是正式训练入口。先打开
 | `09_evaluation_statistics.ipynb` | 09 | 60–90 分钟 | Wilson、分 seed、固定门槛 |
 | `10_failure_analysis.ipynb` | 10–11 | 90 分钟 | 轨迹阶段、失败类别、协议完整性 |
 
-## 正确启动
+前两本标记为 v0.12 foundation，能够独立承担教学；其余目前仍是 v0.11 interactive，
+用于综合练习，需要配合章节 Markdown。升级范围与验收标准见
+[`FOUNDATION_NOTEBOOK_STANDARD.md`](../course/FOUNDATION_NOTEBOOK_STANDARD.md)。
+
+## 推荐：在 VS Code 中学习
+
+1. 用 VS Code 打开仓库根目录，而不是只打开单个 `.ipynb`；
+2. 安装 Microsoft Python 与 Jupyter 扩展；
+3. 选择项目 `.venv/bin/python` 作为 Python interpreter；
+4. 打开 Notebook 后，在右上角再次选择同一个 `.venv/bin/python` kernel；
+5. 第一遍逐格 `Shift+Enter`，完成后才使用 `Restart Kernel and Run All Cells`。
+
+运行下面代码确认 kernel；路径必须落在当前仓库的 `.venv/bin/python`：
+
+```python
+import sys
+print(sys.executable)
+```
+
+## 备选：使用 JupyterLab
 
 从仓库根目录运行：
 
@@ -44,8 +65,8 @@ Notebook 是主要学习界面，不是正式训练入口。先打开
 ## 学习规则
 
 1. 第一次先运行 00；以后每次只打开 dashboard 推荐的一个 Notebook；
-2. 先完成开始诊断、知识地图和 worked example，再写“先预测”答案；
-3. 使用 `Restart Kernel and Run All`，不要依赖乱序执行留下的变量；
+2. v0.12 foundation 必须先读严格定义和推导，再完成手算与带注释实现；
+3. 第一次逐格运行；完成后使用 `Restart Kernel and Run All` 检查顺序依赖；
 4. 完成“动手修改”后恢复原始变量，再运行自测；
 5. 将反思写入 `notes/`，不要把个人运行输出提交到课程发布分支；
 6. 继续完成对应 `.py` starter，因为能运行现成 cell 不等于能独立实现；
