@@ -115,6 +115,7 @@ class CourseMaterialsTest(unittest.TestCase):
         COURSE / "KNOWLEDGE_MAP.md",
         COURSE / "GATE_RUBRIC.md",
         COURSE / "NOTEBOOK_DESIGN.md",
+        COURSE / "FOUNDATION_NOTEBOOK_STANDARD.md",
         DOCS / "labs" / "00_course_preflight.py",
         DOCS / "templates" / "reproduction-contract.md",
         DOCS / "templates" / "source-audit.md",

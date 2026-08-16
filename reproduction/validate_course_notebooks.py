@@ -11,11 +11,18 @@ import tempfile
 import time
 from pathlib import Path
 
+try:
+  from reproduction.audit_markdown_math import audit_file as audit_math_file
+except ModuleNotFoundError:
+  from audit_markdown_math import audit_file as audit_math_file
+
 
 ROOT = Path(__file__).resolve().parents[1]
 NOTEBOOK_DIR = ROOT / "docs" / "notebooks"
 NOTEBOOKS = (
     "00_course_dashboard.ipynb",
+    "01a_coordinate_representations.ipynb",
+    "01b_frames_and_rigid_transforms.ipynb",
     "01_frames_and_transforms.ipynb",
     "02_returns_gae_and_ppo.ipynb",
     "03_mujoco_state_and_control.ipynb",
@@ -24,6 +31,10 @@ NOTEBOOKS = (
     "09_evaluation_statistics.ipynb",
     "10_failure_analysis.ipynb",
 )
+FOUNDATION_NOTEBOOKS = {
+    "01a_coordinate_representations.ipynb",
+    "01b_frames_and_rigid_transforms.ipynb",
+}
 REQUIRED_SECTIONS = (
     "## 开始前诊断",
     "## 学习目标",
@@ -39,6 +50,14 @@ REQUIRED_SECTIONS = (
     "## Exit ticket",
     "## 学完请记住",
     "## 反思与记录",
+)
+FOUNDATION_REQUIRED_SECTIONS = (
+    "## 严格定义",
+    "## 符号、单位与 shape",
+    "## 直观解释",
+    "## 原理与推导",
+    "## 分层练习",
+    "## 回看开始诊断",
 )
 LINK_PATTERN = re.compile(r"(?<!!)\[[^]]+\]\(([^)#]+)(?:#[^)]+)?\)")
 
@@ -56,11 +75,21 @@ def validate_structure(path: Path) -> list[str]:
   for field in ("chapter", "slug", "version", "estimated_minutes"):
     if field not in course_meta:
       errors.append(f"metadata.course.{field} is missing")
-  if course_meta.get("version") != "v0.11":
-    errors.append("metadata.course.version must be v0.11")
+  foundation = path.name in FOUNDATION_NOTEBOOKS
+  expected_version = "v0.12" if foundation else "v0.11"
+  if course_meta.get("version") != expected_version:
+    errors.append(f"metadata.course.version must be {expected_version}")
   estimated_minutes = course_meta.get("estimated_minutes")
-  if not isinstance(estimated_minutes, int) or not 1 <= estimated_minutes <= 90:
-    errors.append("metadata.course.estimated_minutes must be 1..90")
+  maximum_minutes = 150 if foundation else 90
+  if (
+      not isinstance(estimated_minutes, int)
+      or not 1 <= estimated_minutes <= maximum_minutes
+  ):
+    errors.append(
+        f"metadata.course.estimated_minutes must be 1..{maximum_minutes}"
+    )
+  if foundation and course_meta.get("level") != "foundation":
+    errors.append("metadata.course.level must be foundation")
 
   markdown = "\n".join(
       "".join(cell.get("source", []))
@@ -72,9 +101,18 @@ def validate_structure(path: Path) -> list[str]:
       for cell in notebook.get("cells", [])
       if cell.get("cell_type") == "code"
   )
+  with tempfile.TemporaryDirectory(prefix="panda-course-math-") as temp:
+    markdown_path = Path(temp) / f"{path.stem}.md"
+    markdown_path.write_text(markdown, encoding="utf-8")
+    for issue in audit_math_file(markdown_path):
+      errors.append(f"math line {issue.line}: {issue.message}")
   for section in REQUIRED_SECTIONS:
     if section not in markdown:
       errors.append(f"required section missing: {section}")
+  if foundation:
+    for section in FOUNDATION_REQUIRED_SECTIONS:
+      if section not in markdown:
+        errors.append(f"foundation section missing: {section}")
   if "assert_course_kernel" not in code:
     errors.append("kernel guard is missing")
   if "assert " not in code:
@@ -83,6 +121,23 @@ def validate_structure(path: Path) -> list[str]:
     errors.append("targeted feedback helper is missing")
   if "save_progress" not in code:
     errors.append("local progress hook is missing")
+  if foundation:
+    comment_lines = sum(
+        line.lstrip().startswith("#") for line in code.splitlines()
+    )
+    if comment_lines < 12:
+      errors.append("foundation code needs at least 12 semantic comment lines")
+    if code.count("value=None") < 3:
+      errors.append("foundation diagnostic choices must default to None")
+    if code.count('"exit_answers"'):
+      errors.append("exit_answers must be a Python variable, not JSON data")
+    exit_cells = [
+        "".join(cell.get("source", []))
+        for cell in notebook.get("cells", [])
+        if cell.get("id", "").endswith("exit-answers")
+    ]
+    if len(exit_cells) != 1 or exit_cells[0].count("None") < 3:
+      errors.append("foundation exit ticket must contain at least 3 blank answers")
 
   for index, cell in enumerate(notebook.get("cells", [])):
     if not cell.get("id"):
@@ -160,14 +215,21 @@ def execute_notebook(path: Path, timeout: int) -> float:
 def main() -> int:
   parser = argparse.ArgumentParser()
   parser.add_argument("--structure-only", action="store_true")
+  parser.add_argument(
+      "--notebook",
+      action="append",
+      choices=NOTEBOOKS,
+      help="Validate only this notebook; repeat to select more than one.",
+  )
   parser.add_argument("--timeout", type=int, default=180)
   args = parser.parse_args()
 
   print("\nPanda course notebook validation")
   print("=" * 76)
   failures = []
-  total = len(NOTEBOOKS)
-  for position, name in enumerate(NOTEBOOKS, start=1):
+  selected_notebooks = tuple(args.notebook) if args.notebook else NOTEBOOKS
+  total = len(selected_notebooks)
+  for position, name in enumerate(selected_notebooks, start=1):
     path = NOTEBOOK_DIR / name
     if not path.is_file():
       failures.append(f"{name}: file missing")

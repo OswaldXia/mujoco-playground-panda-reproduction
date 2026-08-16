@@ -36,13 +36,34 @@ FEEDBACK = _load_module("course_feedback", NOTEBOOK_DIR / "course_feedback.py")
 class CourseNotebooksTest(unittest.TestCase):
 
   def test_all_versioned_notebooks_have_clean_valid_structure(self) -> None:
-    self.assertEqual(len(VALIDATOR.NOTEBOOKS), 8)
+    self.assertEqual(len(VALIDATOR.NOTEBOOKS), 10)
     for name in VALIDATOR.NOTEBOOKS:
       path = NOTEBOOK_DIR / name
       self.assertTrue(path.is_file(), name)
       self.assertEqual(VALIDATOR.validate_structure(path), [], name)
       notebook = json.loads(path.read_text(encoding="utf-8"))
-      self.assertEqual(notebook["metadata"]["course"]["version"], "v0.11")
+      expected_version = (
+          "v0.12" if name in VALIDATOR.FOUNDATION_NOTEBOOKS else "v0.11"
+      )
+      self.assertEqual(
+          notebook["metadata"]["course"]["version"], expected_version
+      )
+
+  def test_foundation_notebooks_meet_rigorous_teaching_contract(self) -> None:
+    self.assertEqual(len(VALIDATOR.FOUNDATION_NOTEBOOKS), 2)
+    for name in VALIDATOR.FOUNDATION_NOTEBOOKS:
+      notebook = json.loads((NOTEBOOK_DIR / name).read_text(encoding="utf-8"))
+      markdown = "\n".join(
+          "".join(cell.get("source", []))
+          for cell in notebook["cells"]
+          if cell["cell_type"] == "markdown"
+      )
+      for section in VALIDATOR.FOUNDATION_REQUIRED_SECTIONS:
+        self.assertIn(section, markdown, f"{name}: {section}")
+      exit_cell = next(
+          cell for cell in notebook["cells"] if cell["id"].endswith("exit-answers")
+      )
+      self.assertGreaterEqual("".join(exit_cell["source"]).count("None"), 3)
 
   def test_launcher_is_executable(self) -> None:
     launcher = ROOT / "reproduction" / "start_course_notebooks.sh"
